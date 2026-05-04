@@ -60,14 +60,6 @@ public class ServiceNuclei {
                 + " faça um relatório sobre as vulnerabilidades encontradas e recomendações de correção");
     }
 
-    /**
-     * Extrai os objetos JSON do Nuclei da saída bruta do Ansible.
-     *
-     * O Ansible (STDOUT_CALLBACK=json) serializa o stdout do Nuclei como valor
-     * de string dentro do JSON. Ao fazer MAPPER.readTree() no JSON do Ansible,
-     * o Jackson desfaz o escaping e retorna o stdout original linha a linha.
-     * Como fallback, tenta encontrar objetos JSON diretamente no texto bruto.
-     */
     private List<JsonNode> extrairResultados(String ansibleOutput) {
         List<JsonNode> results = new ArrayList<>();
 
