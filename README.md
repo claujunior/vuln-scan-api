@@ -65,7 +65,7 @@ docker images | grep scanner-image   # imagem deve aparecer
 
 ```shell
 chmod +x mvnw
-export $(cat .env | xargs) && ./mvnw spring-boot:run
+export $(cat .env | xargs) && sudo ./mvnw spring-boot:run
 ```
 
 A aplicação vai iniciar na porta **8080**.
