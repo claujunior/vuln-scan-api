@@ -1,3 +1,6 @@
+🛡️ Network Scanner API
+API REST para monitoramento e análise de vulnerabilidades de rede, construída com Java + Spring Boot. A aplicação orquestra scans automatizados com Nmap e Nuclei dentro de containers Docker isolados via playbooks Ansible, e utiliza uma LLM (OpenRouter) para gerar relatórios inteligentes sobre os resultados.
+
 # Tutorial de testar Who is safe?
 
 ## Requisitos
