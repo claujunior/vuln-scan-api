@@ -41,8 +41,6 @@ public class Scan {
     @JoinColumn(name = "Alvo_id") 
     private Alvo alvo;
 
-
-
     @PrePersist
     private void prePersist() {
         if (dataHora == null) {

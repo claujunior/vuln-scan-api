@@ -30,7 +30,7 @@ public class Alvo {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataHoraCadastro;
 
-    @Column(unique = true)
+    @Column(unique=true)
     private String ip;
 
     @Column(unique=true)

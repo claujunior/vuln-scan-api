@@ -496,6 +496,7 @@
               <th>PORTA</th>
               <th>SERVIÇO</th>
               <th>DATA/HORA</th>
+              <th>RELATÓRIO</th>
             </tr>
           </thead>
           <tbody id="scans-body">
@@ -519,6 +520,7 @@
               <th>TEMPLATE</th>
               <th>ENCONTRADO EM</th>
               <th>DATA/HORA</th>
+              <th>RELATÓRIO</th>
             </tr>
           </thead>
           <tbody id="vulns-body">
@@ -601,6 +603,8 @@ let scanTargetId = null;
 let alvosCache = [];
 let scansCache = [];
 let vulnsCache = [];
+// chave: `${alvoId}:${tipo}` → { tipo, alvoLabel, texto, ts }
+let reportsCache = {};
 
 // Tipos de scan disponíveis. Para adicionar um novo playbook:
 // adicione um item aqui e o backend já roteia pelo enum Select.
@@ -811,7 +815,10 @@ function renderScansHistory() {
     return;
   }
   const sorted = [...scansCache].reverse();
-  tbody.innerHTML = sorted.map(s => `
+  tbody.innerHTML = sorted.map(s => {
+    const alvoId = s.alvo?.id;
+    const hasNmap = alvoId && reportsCache[`${alvoId}:nmap`];
+    return `
     <tr>
       <td class="ts">${s.id}</td>
       <td>${escapeHtml(s.alvo?.url) || '—'}</td>
@@ -819,8 +826,12 @@ function renderScansHistory() {
       <td><span class="port-badge">${s.porta}</span></td>
       <td class="service-badge">${escapeHtml(s.servico)}</td>
       <td class="ts">${fmtDate(s.dataHora)}</td>
+      <td>${hasNmap
+        ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvoId},'nmap')">📄 VER</button>`
+        : `<span class="ts">—</span>`}
+      </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function renderVulnsHistory() {
@@ -830,7 +841,10 @@ function renderVulnsHistory() {
     return;
   }
   const sorted = [...vulnsCache].reverse();
-  tbody.innerHTML = sorted.map(v => `
+  tbody.innerHTML = sorted.map(v => {
+    const alvoId = v.alvo?.id;
+    const hasNuclei = alvoId && reportsCache[`${alvoId}:nuclei`];
+    return `
     <tr>
       <td class="ts">${v.id}</td>
       <td>${escapeHtml(v.alvo?.url) || '—'}</td>
@@ -840,8 +854,12 @@ function renderVulnsHistory() {
       <td class="ts">${escapeHtml(v.templateId)}</td>
       <td class="ip-badge">${escapeHtml(v.matchedAt)}</td>
       <td class="ts">${fmtDate(v.dataHora)}</td>
+      <td>${hasNuclei
+        ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvoId},'nuclei')">📄 VER</button>`
+        : `<span class="ts">—</span>`}
+      </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function sevBadge(sev) {
@@ -909,7 +927,15 @@ function renderAlvoCard(alvo, scans, vulns) {
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
           <div class="alvo-card-meta">Último scan: ${ultimo ? fmtDate(ultimo) : 'nunca'}</div>
-          <button class="btn btn-sm" onclick="openScanTypeModal(${alvo.id})">▶ NOVO SCAN</button>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="btn btn-sm" onclick="openScanTypeModal(${alvo.id})">▶ NOVO SCAN</button>
+            ${reportsCache[`${alvo.id}:nmap`]
+              ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvo.id},'nmap')">📄 NMAP</button>`
+              : ''}
+            ${reportsCache[`${alvo.id}:nuclei`]
+              ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvo.id},'nuclei')">📄 NUCLEI</button>`
+              : ''}
+          </div>
         </div>
       </div>
 
@@ -985,6 +1011,7 @@ async function runScan(tipo) {
   try {
     const resp = await apiFetch(`/Scan/post/${id}/${tipo}`, {method:'POST'});
     const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
+    reportsCache[`${id}:${tipo}`] = { tipo, alvoLabel, texto, ts: new Date().toISOString() };
     setReportContent(texto);
     toast(`Scan ${tipo.toUpperCase()} concluído!`, 'success');
     await loadAll();
@@ -1022,6 +1049,19 @@ function setReportError(msg) {
 
 function closeReportModal() {
   document.getElementById('report-modal').classList.remove('open');
+}
+
+function openSavedReport(alvoId, tipo) {
+  const key = `${alvoId}:${tipo}`;
+  const r = reportsCache[key];
+  if (!r) return;
+  document.getElementById('report-modal-title').textContent = `// RELATÓRIO ${r.tipo.toUpperCase()}`;
+  document.getElementById('report-modal-meta').innerHTML =
+    `<span class="tag">${escapeHtml(r.tipo.toUpperCase())}</span> Alvo: ${escapeHtml(r.alvoLabel)} &nbsp;·&nbsp; ${fmtDate(r.ts)}`;
+  const body = document.getElementById('report-modal-body');
+  body.classList.remove('loading', 'error');
+  body.textContent = r.texto || '(sem conteúdo)';
+  document.getElementById('report-modal').classList.add('open');
 }
 
 // ---- ALVOS MODAL ----

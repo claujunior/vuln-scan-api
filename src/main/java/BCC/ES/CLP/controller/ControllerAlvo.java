@@ -35,29 +35,16 @@ public class ControllerAlvo {
    public ResponseEntity<List<Alvo>> obterAlvos(){
         return ResponseEntity.ok(serviceInterface.allAlvos());
    }
-   //http://localhost:8080/Alvo/get
 
    @PostMapping("/post")
    public ResponseEntity<Alvo> cadastrarAlvos(@RequestBody Alvo alvo){
-        serviceInterface.salvarAlvo(alvo);
-
+      serviceInterface.salvarAlvo(alvo);
       return ResponseEntity.ok(alvo);
    }
-   //http://localhost:8080/Alvo/post
-   // {"id": null,"ip": "154.250.190.78","url": "www.google1.com"}
-    @PutMapping("/update")
-    public ResponseEntity<Alvo> atualizarAlvo(@RequestBody Alvo alvo){
-      serviceInterface.atualizarAlvo(alvo);
-      return ResponseEntity.ok(alvo);
-    }
-//http://localhost:8080/Alvo/update
-// {"id": 1,"ip": "155.250.190.78","url": "www.google12.com"}
-    
+
+
     @DeleteMapping("/delete/{id}")
       public ResponseEntity<Alvo> deleteAlvo(@PathVariable Long id){
         return ResponseEntity.ok(serviceInterface.deletarAlvo(id));
     }
-    //http://localhost:8080/Alvo/post/2
-
-
 }

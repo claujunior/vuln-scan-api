@@ -77,6 +77,7 @@ A aplicação vai iniciar na porta **8080**.
 
 ### 5. Registrar um usuário (Postman)
 
+
 **POST** `http://localhost:8080/auth/register`
 
 - Em **Body → raw → JSON**:

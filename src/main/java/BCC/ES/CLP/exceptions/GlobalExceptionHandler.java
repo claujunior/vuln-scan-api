@@ -7,6 +7,15 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * 404 NOT_FOUND            - Recurso não encontrado 
+ * 409 CONFLICT             - Conflito de dados 
+ * 500 INTERNAL_SERVER_ERROR- Erro interno do servidor 
+ * 400 BAD_REQUEST          - Requisição inválida 
+ * 401 UNAUTHORIZED         - Falha de autenticação 
+ * 504 GATEWAY_TIMEOUT      - Timeout em operações de scan
+ */
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -63,7 +72,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(UsuarioJaExistente.class)
     public ResponseEntity<String> handleAuthError(UsuarioJaExistente e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(e.getMessage());
     }
     @ExceptionHandler(IpJaNaoExistente.class)
@@ -75,5 +84,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleIpJaNaoExistente(UrlJaNaoExistente e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(e.getMessage());
+    }
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity<String> handleTokenException(TokenException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    }
+    @ExceptionHandler(AlvoInvalido.class)
+    public ResponseEntity<String> handleAlvoInvalido(AlvoInvalido ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+    
+    @ExceptionHandler(UrlInvalida.class)
+    public ResponseEntity<String> handleUrlInvalida(UrlInvalida ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
