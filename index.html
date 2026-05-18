@@ -588,6 +588,7 @@
     <div class="report-meta" id="report-modal-meta"></div>
     <div class="report-body" id="report-modal-body"></div>
     <div class="modal-actions">
+      <button class="btn btn-info" id="report-download-btn" onclick="downloadReport()">⬇ BAIXAR .HTML</button>
       <button class="btn" onclick="closeReportModal()">FECHAR</button>
     </div>
   </div>
@@ -1049,6 +1050,108 @@ function setReportError(msg) {
 
 function closeReportModal() {
   document.getElementById('report-modal').classList.remove('open');
+  const link = document.getElementById('report-download-link');
+  if (link) { URL.revokeObjectURL(link.href); link.remove(); }
+}
+
+function downloadReport() {
+  const title  = document.getElementById('report-modal-title').textContent;
+  const meta   = document.getElementById('report-modal-meta').innerHTML;
+  const texto  = document.getElementById('report-modal-body').textContent;
+
+  // Converte Markdown simples para HTML (negrito, itálico, títulos, listas, código)
+  function mdToHtml(md) {
+    return md
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/^#{4}\s+(.+)$/gm, '<h4>$1</h4>')
+      .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
+      .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
+      .replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g,  '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,      '<em>$1</em>')
+      .replace(/`([^`]+)`/g,      '<code>$1</code>')
+      .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/^(?!<[hul]|<\/[hul]|<li|<\/ul)(.+)$/gm, '$1')
+      .replace(/^(.)/gm, (_, c) => c);
+  }
+
+  const now = new Date().toLocaleString('pt-BR');
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title.replace(/</g,'&lt;')}</title>
+  <style>
+    :root { --accent:#00ff9d; --accent2:#00c8ff; --danger:#ff4757; --warn:#ffa502; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0c10; color:#c9d1d9; font-family:'Segoe UI',system-ui,sans-serif;
+           line-height:1.7; padding:2.5rem; }
+    body::before { content:''; position:fixed; inset:0;
+      background-image:linear-gradient(rgba(0,255,157,.03)1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,255,157,.03)1px,transparent 1px);
+      background-size:40px 40px; pointer-events:none; z-index:0; }
+    .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; }
+    header { border-left:3px solid var(--accent); padding:.6rem 1.2rem;
+             margin-bottom:1.8rem; background:rgba(0,255,157,.04); }
+    header .brand { font-family:monospace; font-size:.75rem; color:var(--accent);
+                    letter-spacing:3px; margin-bottom:.25rem; }
+    header h1 { font-size:1.5rem; color:#fff; font-weight:700; }
+    .meta { font-family:monospace; font-size:.78rem; color:#4a5568; margin-top:.4rem; }
+    .meta .tag { display:inline-block; border:1px solid var(--accent); color:var(--accent);
+                 padding:.1rem .45rem; margin-right:.4rem; font-size:.72rem; letter-spacing:1px; }
+    .generated { font-family:monospace; font-size:.72rem; color:#4a5568;
+                 margin-bottom:2rem; border-bottom:1px solid #1e2530; padding-bottom:.8rem; }
+    .content { background:#0f1318; border:1px solid #1e2530; padding:1.75rem 2rem;
+               border-top:2px solid var(--accent); }
+    .content p { margin:.6rem 0; }
+    .content h1,.content h2 { color:var(--accent); font-family:monospace;
+      letter-spacing:1px; margin:1.4rem 0 .5rem; border-bottom:1px solid #1e2530; padding-bottom:.3rem; }
+    .content h3,.content h4 { color:var(--accent2); font-family:monospace; margin:1rem 0 .35rem; }
+    .content ul { padding-left:1.4rem; margin:.5rem 0; }
+    .content li { margin:.25rem 0; }
+    .content strong { color:#fff; }
+    .content em { color:var(--warn); font-style:normal; }
+    .content code { background:#0a0c10; border:1px solid #1e2530; color:var(--accent2);
+                    font-family:monospace; font-size:.85em; padding:.1em .4em; }
+    footer { margin-top:2rem; font-family:monospace; font-size:.7rem; color:#4a5568;
+             text-align:center; border-top:1px solid #1e2530; padding-top:.8rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">// CLP SCANNER</div>
+      <h1>${title.replace(/</g,'&lt;')}</h1>
+      <div class="meta">${meta}</div>
+    </header>
+    <div class="generated">Gerado em: ${now}</div>
+    <div class="content"><p>${mdToHtml(texto)}</p></div>
+    <footer>CLP Network Scanner · Relatório gerado automaticamente</footer>
+  </div>
+</body>
+</html>`;
+
+  const blob    = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url     = URL.createObjectURL(blob);
+  const tipo    = title.toLowerCase().includes('nuclei') ? 'nuclei' : 'nmap';
+  const filename = `relatorio-${tipo}-${new Date().toISOString().slice(0,10)}.html`;
+
+  const old = document.getElementById('report-download-link');
+  if (old) { URL.revokeObjectURL(old.href); old.remove(); }
+
+  const a       = document.createElement('a');
+  a.id          = 'report-download-link';
+  a.href        = url;
+  a.download    = filename;
+  a.className   = 'btn btn-info';
+  a.textContent = `✔ CONFIRMAR DOWNLOAD (${filename})`;
+  a.style.cssText = 'font-size:.78rem;margin-top:.75rem;display:inline-flex;align-items:center;';
+
+  const actions = document.querySelector('#report-modal .modal-actions');
+  actions.insertAdjacentElement('afterend', a);
 }
 
 function openSavedReport(alvoId, tipo) {
