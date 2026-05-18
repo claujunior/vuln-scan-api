@@ -37,9 +37,22 @@ public class ServiceAlvo implements ServiceInterface {
     @Override
     @Transactional
     public void salvarAlvo(Alvo alvo) {
-        if (alvo.getIp() == null || alvo.getIp().isEmpty()) { 
-            alvo = new Alvo(alvo.getUrl());
+        // Validação e resolução de IP a partir da URL
+        if (alvo.getIp() == null || alvo.getIp().isEmpty()) {
+            try {
+                InetAddress endereco = InetAddress.getByName(alvo.getUrl());
+                alvo.setIp(endereco.getHostAddress());
+            } catch (Exception e) {
+                throw new UrlInvalida("URL inválida: " + alvo.getUrl());
+            }
         }
+        // Validação de IP
+        try {
+            InetAddress.getByName(alvo.getIp());
+        } catch (Exception e) {
+            throw new AlvoInvalido("IP inválido: " + alvo.getIp());
+        }
+        // Verifica duplicidade
         if (repositoryAlvo.findByIp(alvo.getIp()).isPresent()) {
             throw new AlvoJaRegistradoException();
         }
@@ -52,22 +65,15 @@ public class ServiceAlvo implements ServiceInterface {
     public Alvo deletarAlvo(Long id) {
         Alvo alvoEncontrado = repositoryAlvo.findById(id)
                 .orElseThrow(() -> new AlvoNaoEncontradoException("Alvo não encontrado"));
-        List<Vulnerabilidade> vulnerabilidades = repositoryVulnerabilidade.findByAlvo(alvoEncontrado); 
+        List<Vulnerabilidade> vulnerabilidades = repositoryVulnerabilidade.findByAlvo(alvoEncontrado);
         if (!vulnerabilidades.isEmpty()) {
             repositoryVulnerabilidade.deleteAll(vulnerabilidades);
         }
-        List<Scan> scans = repositoryScan.findByAlvo(alvoEncontrado); 
+        List<Scan> scans = repositoryScan.findByAlvo(alvoEncontrado);
         if (!scans.isEmpty()) {
             repositoryScan.deleteAll(scans);
         }
         repositoryAlvo.deleteById(id);
         return alvoEncontrado;
-    }
-    private void validarAlvo(Alvo alvo) {
-        try {
-            InetAddress.getByName(alvo.getIp());
-        } catch (Exception e) {
-            throw new AlvoInvalido("IP inválido: " + alvo.getIp());
-        }
     }
 }

@@ -45,12 +45,6 @@ public class Alvo {
 
     public Alvo(String url){
         this.url = url;
-         try {
-        InetAddress endereco = InetAddress.getByName(url);
-        this.ip = endereco.getHostAddress();
-        } catch (Exception e) {
-        throw new UrlInvalida("URL inválida: " + url);
-        }
     }
     public Alvo(String url, String ip){
         this.url = url;

@@ -1,13 +1,19 @@
 🛡️ Network Scanner API
 API REST para monitoramento e análise de vulnerabilidades de rede, construída com Java + Spring Boot. A aplicação orquestra scans automatizados com Nmap e Nuclei dentro de containers Docker isolados via playbooks Ansible, e utiliza uma LLM (OpenRouter) para gerar relatórios inteligentes sobre os resultados.
 
+# Disclaimer
+**Atenção:** Esta ferramenta foi desenvolvida exclusivamente para fins educacionais, de pesquisa e para uso em ambientes de teste controlados e devidamente autorizados. O uso em redes, sistemas ou aplicações sem permissão explícita do proprietário é ilegal e pode resultar em sanções civis e criminais.
+
+O desenvolvedor e os colaboradores **não se responsabilizam** por qualquer uso indevido, danos, prejuízos ou consequências legais decorrentes da utilização deste software. Sempre obtenha autorização formal antes de realizar qualquer tipo de varredura, análise ou teste de segurança em sistemas de terceiros.
+
+Ao utilizar este projeto, você concorda em seguir todas as leis e regulamentos aplicáveis à sua jurisdição e assume total responsabilidade por suas ações. Utilize apenas em ambientes de testes autorizados ou pessoais!
+
 # Tutorial de testar Who is safe?
 
 ## Requisitos
 
 * Docker e Docker Compose
 * Java 17+
-* Postman
 * IntelliJ (Opcional)
 
 ## Obtendo a chave da API do OpenRouter
@@ -55,7 +61,7 @@ docker compose up -d --build
 O serviço `scanner` inicia, executa um `echo` e termina — o container fica "exited",
 mas a **imagem permanece disponível** no Docker para os scans em runtime.
 
-Verificar:
+Para verificar se o banco e a imagem do scanner estão disponíveis:
 
 ```shell
 docker ps -a              # postgres UP, scanner Exited (normal)
@@ -64,7 +70,7 @@ docker images | grep scanner-image   # imagem deve aparecer
 
 ---
 
-### 4. Compilar e rodar a aplicação
+### 3. Compilar e rodar a aplicação
 
 ```shell
 chmod +x mvnw
@@ -75,51 +81,7 @@ A aplicação vai iniciar na porta **8080**.
 
 ---
 
-### 5. Registrar um usuário (Postman)
-
-
-**POST** `http://localhost:8080/auth/register`
-
-- Em **Body → raw → JSON**:
-
-```json
-{
-  "login": "seu_email@exemplo.com",
-  "senha": "sua_senha",
-  "cpf": "12345678900"
-}
-```
-
-Resposta esperada: `Resgistrado com sucesso`
-
----
-
-### 6. Fazer login e obter o token (Postman)
-
-**POST** `http://localhost:8080/auth/login`
-
-- Em **Body → raw → JSON**:
-
-```json
-{
-  "login": "seu_email@exemplo.com",
-  "senha": "sua_senha"
-}
-```
-
-A resposta será o **token JWT**. Copie esse token.
-
----
-
-### 7. Usar o token nas requisições
-
-Em qualquer outra requisição no Postman, vá em:
-
-**Authorization → Bearer Token** → cole o token recebido no login.
-
----
-
-### 8. Acessar o frontend
+### 4. Acessar o frontend
 
 Abra o arquivo `index.html` na raiz do projeto diretamente no navegador:
 
