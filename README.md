@@ -90,3 +90,48 @@ xdg-open index.html
 ```
 
 Ou dê dois cliques no arquivo pelo gerenciador de arquivos.
+
+---
+
+# Ambientes de Teste de Vulnerabilidades
+
+O projeto inclui ambientes de teste com aplicações vulneráveis para simular cenários reais de análise:
+
+- **DVWA** 
+- **Juice Shop**
+
+Esses ambientes são definidos no arquivo `docker-compose.vulnlab.yml`.
+
+### 5. Subindo os containers de teste (opcional)
+
+Execute o comando abaixo na raiz do projeto:
+
+```shell
+docker compose -f docker-compose.vulnlab.yml up -d
+```
+
+Os serviços estarão disponíveis em:
+
+- DVWA:        http://localhost:8081
+- Juice Shop:  http://localhost:8082
+
+#### Verificando se os containers estão UP
+
+Para garantir que os containers das aplicações vulneráveis estão rodando:
+
+```shell
+docker ps
+```
+
+Você deve ver as linhas referentes a `dvwa` e `juice-shop` com STATUS `Up`.
+Com isso ao cadastrar o seu ip local como alvo, o scan deverá reconhecer que as portas desses serviços criados estão abertas e indicará no relatório. 
+
+### Derrubando os containers de teste
+
+Para parar e remover os containers de teste:
+
+```shell
+docker compose -f docker-compose.vulnlab.yml down
+```
+
+---
