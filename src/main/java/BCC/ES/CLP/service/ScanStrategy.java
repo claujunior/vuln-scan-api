@@ -1,4 +1,7 @@
 package BCC.ES.CLP.service;
 
-public class ScanStrategy {
+import BCC.ES.CLP.dto.ScanRawResult;
+
+public interface ScanStrategy {
+    String processar(ScanRawResult resultado);
 }

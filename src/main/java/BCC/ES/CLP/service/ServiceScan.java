@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ServiceScan {
@@ -19,6 +20,7 @@ public class ServiceScan {
     private final ServiceOrquestrador serviceOrquestrador;
     private final ServiceNmap serviceNmap;
     private final ServiceNuclei serviceNuclei;
+    private final Map<Select, ScanStrategy> strategies;
 
     public ServiceScan(RepositoryScan repositoryScan,
                        RepositoryVulnerabilidade repositoryVulnerabilidade,
@@ -30,6 +32,10 @@ public class ServiceScan {
         this.serviceOrquestrador = serviceOrquestrador;
         this.serviceNmap = serviceNmap;
         this.serviceNuclei = serviceNuclei;
+        this.strategies = Map.of(
+                Select.NMAP,   serviceNmap,
+                Select.NUCLEI, serviceNuclei
+        );
     }
 
     @Transactional(readOnly = true)
@@ -44,9 +50,9 @@ public class ServiceScan {
 
     public String seletor(Long id, Select select) {
         ScanRawResult resultado = serviceOrquestrador.executarScan(id, select).join();
-        return switch (select) {
-            case NMAP   -> serviceNmap.processar(resultado);
-            case NUCLEI -> serviceNuclei.processar(resultado);
-        };
+
+        ScanStrategy strategy = strategies.get(select);
+        ScanSeletor seletor = new ScanSeletor(strategy);
+        return seletor.executar(resultado);
     }
 }

@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class ServiceNmap {
+public class ServiceNmap implements ScanStrategy {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryAlvo repositoryAlvo;
