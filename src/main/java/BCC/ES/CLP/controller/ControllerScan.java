@@ -32,10 +32,10 @@ public class ControllerScan {
         return ResponseEntity.ok(serviceScan.allScan());
     }
 
-    @PostMapping("/post/{id}/{tipo}")
-    public ResponseEntity<String> executar(@PathVariable Long id, @PathVariable String tipo) {
+    @PostMapping("/post/{id}/{tipo}/{executor}")
+    public ResponseEntity<String> executar(@PathVariable Long id, @PathVariable String tipo, @PathVariable String executor) {
         Select select = Select.valueOf(tipo.toUpperCase());
-        return ResponseEntity.ok(serviceScan.seletor(id,select));
+        return ResponseEntity.ok(serviceScan.seletor(id,select, executor));
     }
 
 }

@@ -48,8 +48,8 @@ public class ServiceScan {
         return repositoryVulnerabilidade.findAll();
     }
 
-    public String seletor(Long id, Select select) {
-        ScanRawResult resultado = serviceOrquestrador.executarScan(id, select).join();
+    public String seletor(Long id, Select select, String executor) {
+        ScanRawResult resultado = serviceOrquestrador.executarScan(id, select, executor).join();
 
         ScanStrategy strategy = strategies.get(select);
         ScanSeletor seletor = new ScanSeletor(strategy);

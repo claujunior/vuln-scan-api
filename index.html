@@ -219,6 +219,15 @@
   }
   .report-body.error { color: var(--danger); }
 
+  .executor-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .executor-chip {
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    font-family: var(--mono); font-size: 0.78rem; letter-spacing: 1px;
+    padding: 0.5rem 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  .executor-chip:hover { border-color: var(--accent); color: var(--text); }
+  .executor-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,157,0.05); }
+
   .scan-type-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .scan-type-card {
     border: 1px solid var(--border); padding: 1rem 1.25rem; cursor: pointer;
@@ -572,6 +581,10 @@
     <p style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">
       Alvo: <span id="scan-type-alvo" style="color:var(--accent2)"></span>
     </p>
+    <label>Forma de execução</label>
+    <div class="executor-choices" id="executor-choices">
+      <!-- preenchido via JS -->
+    </div>
     <div class="scan-type-list" id="scan-type-list">
       <!-- preenchido via JS -->
     </div>
@@ -613,6 +626,16 @@ const SCAN_TYPES = [
   { id: 'nmap',   nome: 'NMAP',   desc: 'Varredura de portas TCP e identificação de serviços' },
   { id: 'nuclei', nome: 'NUCLEI', desc: 'Detecção de vulnerabilidades web (CVEs, misconfigs)' }
 ];
+
+// Formas de execução do scan. O `id` precisa bater com o nome do bean no
+// backend (@Component("docker"), @Component("baremetal"), ...). Para suportar
+// uma nova forma de execução, basta adicionar um item aqui e criar o
+// ScanInterface correspondente no backend.
+const EXECUTORS = [
+  { id: 'docker',    nome: 'DOCKER',     desc: 'Roda o playbook dentro de um container isolado' },
+  { id: 'baremetal', nome: 'BARE METAL', desc: 'Roda o playbook direto no host, sem container' }
+];
+let selectedExecutor = EXECUTORS[0].id;
 
 // ---- UTILS ----
 function toast(msg, type='success') {
@@ -982,9 +1005,12 @@ function ultimoScanTs(scans, vulns) {
 // ---- SCAN: TYPE SELECTION ----
 function openScanTypeModal(alvoId) {
   scanTargetId = alvoId;
+  selectedExecutor = EXECUTORS[0].id;
   const alvo = alvosCache.find(a => a.id === alvoId);
   document.getElementById('scan-type-alvo').textContent =
     alvo ? (alvo.ip || alvo.url || `#${alvoId}`) : `#${alvoId}`;
+
+  renderExecutorChoices();
 
   document.getElementById('scan-type-list').innerHTML = SCAN_TYPES.map(t => `
     <div class="scan-type-card" onclick="runScan('${t.id}')">
@@ -996,6 +1022,20 @@ function openScanTypeModal(alvoId) {
   document.getElementById('scan-type-modal').classList.add('open');
 }
 
+function renderExecutorChoices() {
+  document.getElementById('executor-choices').innerHTML = EXECUTORS.map(e => `
+    <button type="button"
+            class="executor-chip ${e.id === selectedExecutor ? 'active' : ''}"
+            title="${escapeHtml(e.desc)}"
+            onclick="selectExecutor('${e.id}')">${escapeHtml(e.nome)}</button>
+  `).join('');
+}
+
+function selectExecutor(id) {
+  selectedExecutor = id;
+  renderExecutorChoices();
+}
+
 function closeScanTypeModal() {
   document.getElementById('scan-type-modal').classList.remove('open');
   scanTargetId = null;
@@ -1004,17 +1044,18 @@ function closeScanTypeModal() {
 async function runScan(tipo) {
   if (!scanTargetId) return;
   const id = scanTargetId;
+  const executor = selectedExecutor;
   const alvo = alvosCache.find(a => a.id === id);
   const alvoLabel = alvo ? (alvo.ip || alvo.url || `#${id}`) : `#${id}`;
   closeScanTypeModal();
 
-  openReportModal(tipo, alvoLabel);
+  openReportModal(tipo, alvoLabel, executor);
   try {
-    const resp = await apiFetch(`/Scan/post/${id}/${tipo}`, {method:'POST'});
+    const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}`, {method:'POST'});
     const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
-    reportsCache[`${id}:${tipo}`] = { tipo, alvoLabel, texto, ts: new Date().toISOString() };
+    reportsCache[`${id}:${tipo}`] = { tipo, executor, alvoLabel, texto, ts: new Date().toISOString() };
     setReportContent(texto);
-    toast(`Scan ${tipo.toUpperCase()} concluído!`, 'success');
+    toast(`Scan ${tipo.toUpperCase()} (${executor}) concluído!`, 'success');
     await loadAll();
   } catch(e) {
     setReportError(e.message || 'Erro ao executar scan');
@@ -1023,11 +1064,13 @@ async function runScan(tipo) {
 }
 
 // ---- REPORT MODAL ----
-function openReportModal(tipo, alvoLabel) {
+function openReportModal(tipo, alvoLabel, executor) {
   document.getElementById('report-modal-title').textContent =
     `// RELATÓRIO ${tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
-    `<span class="tag">${escapeHtml(tipo.toUpperCase())}</span> Alvo: ${escapeHtml(alvoLabel)}`;
+    `<span class="tag">${escapeHtml(tipo.toUpperCase())}</span>` +
+    (executor ? `<span class="tag">${escapeHtml(executor.toUpperCase())}</span>` : '') +
+    ` Alvo: ${escapeHtml(alvoLabel)}`;
   const body = document.getElementById('report-modal-body');
   body.classList.add('loading');
   body.classList.remove('error');
@@ -1160,7 +1203,9 @@ function openSavedReport(alvoId, tipo) {
   if (!r) return;
   document.getElementById('report-modal-title').textContent = `// RELATÓRIO ${r.tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
-    `<span class="tag">${escapeHtml(r.tipo.toUpperCase())}</span> Alvo: ${escapeHtml(r.alvoLabel)} &nbsp;·&nbsp; ${fmtDate(r.ts)}`;
+    `<span class="tag">${escapeHtml(r.tipo.toUpperCase())}</span>` +
+    (r.executor ? `<span class="tag">${escapeHtml(r.executor.toUpperCase())}</span>` : '') +
+    ` Alvo: ${escapeHtml(r.alvoLabel)} &nbsp;·&nbsp; ${fmtDate(r.ts)}`;
   const body = document.getElementById('report-modal-body');
   body.classList.remove('loading', 'error');
   body.textContent = r.texto || '(sem conteúdo)';
