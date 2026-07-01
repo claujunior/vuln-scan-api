@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class ServiceNuclei implements ScanStrategy {
+public class NucleiService implements ScanStrategy {
 
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final RepositoryAlvo repositoryAlvo;
@@ -23,7 +23,7 @@ public class ServiceNuclei implements ScanStrategy {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public ServiceNuclei(RepositoryVulnerabilidade repositoryVulnerabilidade,
+    public NucleiService(RepositoryVulnerabilidade repositoryVulnerabilidade,
                          RepositoryAlvo repositoryAlvo,
                          LlmService llmService) {
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
@@ -39,8 +39,8 @@ public class ServiceNuclei implements ScanStrategy {
             return "Nenhuma vulnerabilidade encontrada para " + resultado.ip();
         }
 
-        Alvo alvo = repositoryAlvo.findByIp(resultado.ip())
-                .orElseThrow(() -> new ErroAoEncontrarIp("IP não encontrado: " + resultado.ip()));
+        Alvo alvo = repositoryAlvo.findById(resultado.alvoId())
+                .orElseThrow(() -> new ErroAoEncontrarIp("Alvo não encontrado: " + resultado.alvoId()));
 
         StringBuilder resumo = new StringBuilder();
         for (JsonNode vuln : vulns) {

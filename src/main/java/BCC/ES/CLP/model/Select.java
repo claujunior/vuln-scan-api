@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public enum Select {
-    NMAP("nmap", "/app/infra/playbooks/nmapscan.yml", System.getProperty("user.dir") + "/infra"),
+    NIKTO("nikto", "/app/infra/playbooks/nikto.yml", System.getProperty("user.dir") + "/infra"),
     NUCLEI("nuclei", "/app/infra/playbooks/nuclei.yml", System.getProperty("user.dir") + "/infra");
-
+    
     private String tipo;
     private String ansible;
     private String infra_Dir;

@@ -3,27 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLP Scanner</title>
+<title>CLP // Offensive</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0c10;
-    --surface: #0f1318;
-    --border: #1e2530;
-    --accent: #00ff9d;
-    --accent2: #00c8ff;
-    --danger: #ff4757;
-    --warn: #ffa502;
-    --text: #c9d1d9;
-    --muted: #4a5568;
+    --bg: #0b0809;
+    --surface: #150f11;
+    --border: #2b1d20;
+    --accent: #ff2b3d;       /* vermelho ofensivo (primário) */
+    --accent-dim: #a01824;
+    --accent2: #ff8a3d;      /* âmbar (secundário) */
+    --danger: #ff2b3d;
+    --warn: #ffb020;
+    --text: #d8c9cb;
+    --muted: #7a5c60;
     --mono: 'Share Tech Mono', monospace;
     --sans: 'Syne', sans-serif;
 
-    --sev-info: #4a5568;
-    --sev-low: #00c8ff;
-    --sev-medium: #ffa502;
-    --sev-high: #ff7849;
-    --sev-critical: #ff4757;
+    --sev-info: #6b5558;
+    --sev-low: #ffb020;
+    --sev-medium: #ff8a3d;
+    --sev-high: #ff5a2e;
+    --sev-critical: #ff2b3d;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,8 +42,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
+      linear-gradient(rgba(255,43,61,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,43,61,0.035) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -71,7 +72,8 @@
     font-family: var(--mono); color: var(--accent);
     font-size: 1.1rem; margin-bottom: 0.25rem; letter-spacing: 2px;
   }
-  .auth-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 2rem; color: #fff; }
+  .auth-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.35rem; color: #fff; }
+  .auth-sub { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 2px; margin-bottom: 2rem; text-transform: uppercase; }
   .auth-tabs { display: flex; margin-bottom: 2rem; border-bottom: 1px solid var(--border); }
   .auth-tab {
     background: none; border: none; color: var(--muted);
@@ -112,7 +114,7 @@
 
   .auth-msg { font-family: var(--mono); font-size: 0.8rem; padding: 0.6rem; margin-top: 1rem; display: none; }
   .auth-msg.error { color: var(--danger); border: 1px solid var(--danger); }
-  .auth-msg.success { color: var(--accent); border: 1px solid var(--accent); }
+  .auth-msg.success { color: var(--accent2); border: 1px solid var(--accent2); }
 
   /* ---- APP ---- */
   #app { display: none; position: relative; z-index: 1; }
@@ -127,6 +129,7 @@
     width: 36px; height: 36px; border: 1px solid var(--accent);
     display: flex; align-items: center; justify-content: center;
     color: var(--accent); font-size: 1.1rem;
+    box-shadow: 0 0 12px rgba(255,43,61,0.25);
   }
   .brand-name { font-family: var(--mono); font-size: 1rem; color: var(--accent); letter-spacing: 3px; }
   .brand-sub { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; margin-top: 1px; }
@@ -152,30 +155,22 @@
   .table-wrap { background: var(--surface); border: 1px solid var(--border); overflow: auto; }
   table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.82rem; }
   thead th {
-    background: #0d1117; color: var(--muted); font-size: 0.68rem;
+    background: #120c0e; color: var(--muted); font-size: 0.68rem;
     letter-spacing: 2px; text-transform: uppercase; padding: 0.75rem 1rem;
     text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap;
   }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(0,255,157,0.03); }
+  tbody tr:hover { background: rgba(255,43,61,0.04); }
   td { padding: 0.8rem 1rem; color: var(--text); vertical-align: middle; }
 
   .ip-badge { color: var(--accent2); }
-  .port-badge {
-    display: inline-block;
-    background: rgba(0,200,255,0.1);
-    color: var(--accent2);
-    padding: 0.2rem 0.6rem;
-    margin: 0.15rem 0.2rem 0.15rem 0;
-    font-family: var(--mono); font-size: 0.78rem;
-  }
   .service-badge { color: var(--accent); }
   .ts { color: var(--muted); font-size: 0.75rem; }
 
   /* ---- MODAL ---- */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
     z-index: 200; display: none; align-items: center; justify-content: center;
   }
   .modal-overlay.open { display: flex; }
@@ -219,6 +214,7 @@
   }
   .report-body.error { color: var(--danger); }
 
+  /* ---- EXECUTOR CHIPS ---- */
   .executor-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
   .executor-chip {
     background: var(--bg); border: 1px solid var(--border); color: var(--muted);
@@ -226,14 +222,14 @@
     padding: 0.5rem 1rem; cursor: pointer; transition: all 0.15s;
   }
   .executor-chip:hover { border-color: var(--accent); color: var(--text); }
-  .executor-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,157,0.05); }
+  .executor-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(255,43,61,0.06); }
 
   .scan-type-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .scan-type-card {
     border: 1px solid var(--border); padding: 1rem 1.25rem; cursor: pointer;
     transition: all 0.15s; background: var(--bg);
   }
-  .scan-type-card:hover { border-color: var(--accent); background: rgba(0,255,157,0.03); }
+  .scan-type-card:hover { border-color: var(--accent); background: rgba(255,43,61,0.05); }
   .scan-type-card .stc-name { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; letter-spacing: 1.5px; }
   .scan-type-card .stc-desc { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; margin-top: 0.3rem; }
 
@@ -260,7 +256,7 @@
     z-index: 999; animation: toastIn 0.3s ease; max-width: 300px;
   }
   .toast.error { border-left-color: var(--danger); color: var(--danger); }
-  .toast.success { border-left-color: var(--accent); color: var(--accent); }
+  .toast.success { border-left-color: var(--accent2); color: var(--accent2); }
   @keyframes toastIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
   .spinner {
@@ -342,11 +338,11 @@
     padding: 0.2rem 0.5rem;
     text-transform: uppercase; font-weight: 700;
   }
-  .sev-info     { background: rgba(74,85,104,0.2);  color: var(--sev-info); border: 1px solid var(--sev-info); }
-  .sev-low      { background: rgba(0,200,255,0.1);  color: var(--sev-low); border: 1px solid var(--sev-low); }
-  .sev-medium   { background: rgba(255,165,2,0.1);  color: var(--sev-medium); border: 1px solid var(--sev-medium); }
-  .sev-high     { background: rgba(255,120,73,0.1); color: var(--sev-high); border: 1px solid var(--sev-high); }
-  .sev-critical { background: rgba(255,71,87,0.15); color: var(--sev-critical); border: 1px solid var(--sev-critical); }
+  .sev-info     { background: rgba(107,85,88,0.2);  color: var(--sev-info); border: 1px solid var(--sev-info); }
+  .sev-low      { background: rgba(255,176,32,0.1); color: var(--sev-low); border: 1px solid var(--sev-low); }
+  .sev-medium   { background: rgba(255,138,61,0.12); color: var(--sev-medium); border: 1px solid var(--sev-medium); }
+  .sev-high     { background: rgba(255,90,46,0.14); color: var(--sev-high); border: 1px solid var(--sev-high); }
+  .sev-critical { background: rgba(255,43,61,0.16); color: var(--sev-critical); border: 1px solid var(--sev-critical); }
 
   .vuln-body { flex: 1; min-width: 0; }
   .vuln-name { color: var(--text); }
@@ -360,7 +356,8 @@
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">// CLP</div>
-    <div class="auth-title">Network Scanner</div>
+    <div class="auth-title">Offensive Platform</div>
+    <div class="auth-sub">Red Team Recon</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login')">LOGIN</button>
       <button class="auth-tab" onclick="switchAuthTab('register')">REGISTER</button>
@@ -369,7 +366,7 @@
     <div id="login-form">
       <div class="form-group">
         <label>Usuário</label>
-        <input type="text" id="login-user" placeholder="seu_usuario" autocomplete="username">
+        <input type="text" id="login-user" placeholder="operador" autocomplete="username">
       </div>
       <div class="form-group">
         <label>Senha</label>
@@ -384,11 +381,7 @@
     <div id="register-form" style="display:none">
       <div class="form-group">
         <label>Usuário</label>
-        <input type="text" id="reg-user" placeholder="novo_usuario" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>CPF</label>
-        <input type="text" id="reg-cpf" placeholder="12345678900" maxlength="14" inputmode="numeric">
+        <input type="text" id="reg-user" placeholder="novo_operador" autocomplete="username">
       </div>
       <div class="form-group">
         <label>Senha</label>
@@ -408,12 +401,12 @@
     <div class="topbar-brand">
       <div class="brand-icon">⌖</div>
       <div>
-        <div class="brand-name">CLP SCANNER</div>
-        <div class="brand-sub">NETWORK RECON SYSTEM</div>
+        <div class="brand-name">CLP // OFFENSIVE</div>
+        <div class="brand-sub">RED TEAM RECON PLATFORM</div>
       </div>
     </div>
     <div class="topbar-right">
-      <div class="user-pill" id="user-display">USER</div>
+      <div class="user-pill" id="user-display">OPERADOR</div>
       <button class="btn btn-sm btn-danger" onclick="doLogout()">SAIR</button>
     </div>
   </div>
@@ -426,7 +419,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('dashboard', event)">DASHBOARD</button>
     <button class="nav-tab" onclick="switchTab('alvos', event)">ALVOS</button>
-    <button class="nav-tab" onclick="switchTab('scans', event)">HISTÓRICO</button>
+    <button class="nav-tab" onclick="switchTab('findings', event)">ACHADOS</button>
   </div>
 
   <div class="main">
@@ -435,25 +428,25 @@
     <div class="tab-content active" id="tab-dashboard">
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-label">Alvos cadastrados</div>
+          <div class="stat-label">Alvos na mira</div>
           <div class="stat-value" id="stat-alvos">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Scans NMAP</div>
-          <div class="stat-value" id="stat-scans">—</div>
+          <div class="stat-label">Execuções</div>
+          <div class="stat-value" id="stat-exec">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Portas encontradas</div>
-          <div class="stat-value" id="stat-portas">—</div>
+          <div class="stat-label">Achados</div>
+          <div class="stat-value" id="stat-vulns">—</div>
         </div>
         <div class="stat-card danger">
-          <div class="stat-label">Vulnerabilidades</div>
-          <div class="stat-value" id="stat-vulns">—</div>
+          <div class="stat-label">Alta / Crítica</div>
+          <div class="stat-value" id="stat-crit">—</div>
         </div>
       </div>
 
       <div class="section-header">
-        <div class="section-title"><span>//</span> RESULTADOS POR ALVO</div>
+        <div class="section-title"><span>//</span> SUPERFÍCIE DE ATAQUE POR ALVO</div>
         <button class="btn btn-sm" onclick="loadAll()">↻ ATUALIZAR</button>
       </div>
       <div id="dashboard-alvos" class="alvo-list">
@@ -485,37 +478,11 @@
       </div>
     </div>
 
-    <!-- HISTÓRICO -->
-    <div class="tab-content" id="tab-scans">
+    <!-- ACHADOS -->
+    <div class="tab-content" id="tab-findings">
       <div class="section-header">
-        <div class="section-title"><span>//</span> HISTÓRICO COMPLETO</div>
+        <div class="section-title"><span>//</span> ACHADOS / VULNERABILIDADES</div>
         <button class="btn" onclick="loadAll()">↻ ATUALIZAR</button>
-      </div>
-
-      <div class="section-header" style="margin-top:0.5rem;margin-bottom:0.6rem;">
-        <div class="section-title"><span>//</span> PORTAS DETECTADAS (NMAP)</div>
-      </div>
-      <div class="table-wrap" style="margin-bottom:1.5rem;">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>ALVO</th>
-              <th>IP</th>
-              <th>PORTA</th>
-              <th>SERVIÇO</th>
-              <th>DATA/HORA</th>
-              <th>RELATÓRIO</th>
-            </tr>
-          </thead>
-          <tbody id="scans-body">
-            <tr><td colspan="6"><div class="empty"><div class="empty-icon">◌</div>Carregando...</div></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section-header" style="margin-bottom:0.6rem;">
-        <div class="section-title"><span>//</span> VULNERABILIDADES (NUCLEI)</div>
       </div>
       <div class="table-wrap">
         <table>
@@ -533,7 +500,7 @@
             </tr>
           </thead>
           <tbody id="vulns-body">
-            <tr><td colspan="8"><div class="empty"><div class="empty-icon">◌</div>Carregando...</div></td></tr>
+            <tr><td colspan="9"><div class="empty"><div class="empty-icon">◌</div>Carregando...</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -574,10 +541,10 @@
   </div>
 </div>
 
-<!-- =================== MODAL ESCOLHER TIPO DE SCAN =================== -->
+<!-- =================== MODAL LANÇAR SCAN =================== -->
 <div class="modal-overlay" id="scan-type-modal">
   <div class="modal">
-    <div class="modal-title">// ESCOLHA O TIPO DE SCAN</div>
+    <div class="modal-title">// LANÇAR SCAN</div>
     <p style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">
       Alvo: <span id="scan-type-alvo" style="color:var(--accent2)"></span>
     </p>
@@ -585,7 +552,8 @@
     <div class="executor-choices" id="executor-choices">
       <!-- preenchido via JS -->
     </div>
-    <div class="scan-type-list" id="scan-type-list">
+    <label>Ferramenta</label>
+    <div class="scan-type-list" id="scan-type-list" style="margin-top:0.5rem;">
       <!-- preenchido via JS -->
     </div>
     <div class="modal-actions">
@@ -615,16 +583,18 @@ let deleteTargetId = null;
 let scanTargetId = null;
 
 let alvosCache = [];
-let scansCache = [];
 let vulnsCache = [];
-// chave: `${alvoId}:${tipo}` → { tipo, alvoLabel, texto, ts }
+// chave: `${alvoId}:${tipo}` → { tipo, executor, alvoLabel, texto, ts }
 let reportsCache = {};
 
-// Tipos de scan disponíveis. Para adicionar um novo playbook:
-// adicione um item aqui e o backend já roteia pelo enum Select.
+// Ferramentas de scan disponíveis. O `id` precisa bater com o enum Select do
+// backend (Select.valueOf(id.toUpperCase())). Para plugar uma nova ferramenta
+// ofensiva: adicione um item aqui, crie o valor no enum Select + a ScanStrategy
+// e o playbook correspondente. O front se adapta automaticamente.
 const SCAN_TYPES = [
-  { id: 'nmap',   nome: 'NMAP',   desc: 'Varredura de portas TCP e identificação de serviços' },
-  { id: 'nuclei', nome: 'NUCLEI', desc: 'Detecção de vulnerabilidades web (CVEs, misconfigs)' }
+  { id: 'nikto',  nome: 'NIKTO',  desc: 'Auditoria de servidores web: headers, arquivos e configs perigosas' },
+  { id: 'nuclei', nome: 'NUCLEI', desc: 'Detecção de CVEs e misconfigs via templates da comunidade' }
+  // { id: 'nmap', nome: 'NMAP', desc: 'Varredura de portas e fingerprint de serviços' },
 ];
 
 // Formas de execução do scan. O `id` precisa bater com o nome do bean no
@@ -663,6 +633,20 @@ function escapeHtml(s) {
   return String(s)
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
     .replaceAll('"','&quot;').replaceAll("'",'&#39;');
+}
+
+// Botões "ver relatório" para cada ferramenta que já rodou nesse alvo.
+function reportButtons(alvoId) {
+  return SCAN_TYPES
+    .filter(t => reportsCache[`${alvoId}:${t.id}`])
+    .map(t => `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvoId},'${t.id}')">📄 ${escapeHtml(t.nome)}</button>`)
+    .join('');
+}
+
+const ORDEM_SEV = { critical:0, high:1, medium:2, low:3, info:4 };
+function isSevere(sev) {
+  const s = (sev||'').toLowerCase();
+  return s === 'high' || s === 'critical';
 }
 
 // ---- AUTH ----
@@ -759,7 +743,7 @@ async function apiFetch(path, opts={}) {
 // ---- LOAD DATA ----
 async function loadAll() {
   try {
-    await Promise.all([loadAlvos(), loadScans(), loadVulns()]);
+    await Promise.all([loadAlvos(), loadVulns()]);
     setStatus(true);
     updateStats();
     renderDashboard();
@@ -778,16 +762,6 @@ async function loadAlvos() {
   }
 }
 
-async function loadScans() {
-  try {
-    scansCache = await apiFetch('/Scan/get');
-    renderScansHistory();
-  } catch(e) {
-    document.getElementById('scans-body').innerHTML =
-      `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠</div>${escapeHtml(e.message)}</div></td></tr>`;
-  }
-}
-
 async function loadVulns() {
   try {
     vulnsCache = await apiFetch('/Vulnerabilidade/get');
@@ -795,16 +769,16 @@ async function loadVulns() {
   } catch(e) {
     vulnsCache = [];
     document.getElementById('vulns-body').innerHTML =
-      `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠</div>${escapeHtml(e.message)}</div></td></tr>`;
+      `<tr><td colspan="9"><div class="empty"><div class="empty-icon">⚠</div>${escapeHtml(e.message)}</div></td></tr>`;
   }
 }
 
 function updateStats() {
   document.getElementById('stat-alvos').textContent = alvosCache.length;
-  document.getElementById('stat-scans').textContent = scansCache.length;
-  const portas = new Set(scansCache.map(s => s.porta));
-  document.getElementById('stat-portas').textContent = portas.size;
+  document.getElementById('stat-exec').textContent = Object.keys(reportsCache).length;
   document.getElementById('stat-vulns').textContent = vulnsCache.length;
+  document.getElementById('stat-crit').textContent =
+    vulnsCache.filter(v => isSevere(v.severidade)).length;
 }
 
 // ---- RENDER ALVOS (tab Alvos) ----
@@ -822,7 +796,7 @@ function renderAlvos() {
       <td class="ts">${fmtDate(a.dataHoraCadastro)}</td>
       <td>
         <div style="display:flex;gap:0.4rem;align-items:center;">
-          <button class="btn btn-sm" onclick="openScanTypeModal(${a.id})" title="Executar scan">▶ SCAN</button>
+          <button class="btn btn-sm" onclick="openScanTypeModal(${a.id})" title="Lançar scan">▶ SCAN</button>
           <button class="btn btn-sm" onclick="openEditAlvo(${a.id})" title="Editar">✎</button>
           <button class="btn btn-sm btn-danger" onclick="openDelModal(${a.id},'${escapeHtml(a.ip||a.url)}')" title="Excluir">✕</button>
         </div>
@@ -831,43 +805,17 @@ function renderAlvos() {
   `).join('');
 }
 
-// ---- RENDER HISTORY TABLES ----
-function renderScansHistory() {
-  const tbody = document.getElementById('scans-body');
-  if (!scansCache.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">◌</div>Nenhum scan NMAP realizado</div></td></tr>`;
-    return;
-  }
-  const sorted = [...scansCache].reverse();
-  tbody.innerHTML = sorted.map(s => {
-    const alvoId = s.alvo?.id;
-    const hasNmap = alvoId && reportsCache[`${alvoId}:nmap`];
-    return `
-    <tr>
-      <td class="ts">${s.id}</td>
-      <td>${escapeHtml(s.alvo?.url) || '—'}</td>
-      <td class="ip-badge">${escapeHtml(s.alvo?.ip) || '—'}</td>
-      <td><span class="port-badge">${s.porta}</span></td>
-      <td class="service-badge">${escapeHtml(s.servico)}</td>
-      <td class="ts">${fmtDate(s.dataHora)}</td>
-      <td>${hasNmap
-        ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvoId},'nmap')">📄 VER</button>`
-        : `<span class="ts">—</span>`}
-      </td>
-    </tr>
-  `}).join('');
-}
-
+// ---- RENDER FINDINGS TABLE ----
 function renderVulnsHistory() {
   const tbody = document.getElementById('vulns-body');
   if (!vulnsCache.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">◌</div>Nenhuma vulnerabilidade encontrada</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">◌</div>Nenhum achado registrado</div></td></tr>`;
     return;
   }
   const sorted = [...vulnsCache].reverse();
   tbody.innerHTML = sorted.map(v => {
     const alvoId = v.alvo?.id;
-    const hasNuclei = alvoId && reportsCache[`${alvoId}:nuclei`];
+    const btns = alvoId ? reportButtons(alvoId) : '';
     return `
     <tr>
       <td class="ts">${v.id}</td>
@@ -878,10 +826,7 @@ function renderVulnsHistory() {
       <td class="ts">${escapeHtml(v.templateId)}</td>
       <td class="ip-badge">${escapeHtml(v.matchedAt)}</td>
       <td class="ts">${fmtDate(v.dataHora)}</td>
-      <td>${hasNuclei
-        ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvoId},'nuclei')">📄 VER</button>`
-        : `<span class="ts">—</span>`}
-      </td>
+      <td>${btns || `<span class="ts">—</span>`}</td>
     </tr>
   `}).join('');
 }
@@ -900,14 +845,6 @@ function renderDashboard() {
     return;
   }
 
-  // Agrupa scans e vulns por id de alvo
-  const scansPorAlvo = new Map();
-  for (const s of scansCache) {
-    if (!s.alvo) continue;
-    const key = s.alvo.id;
-    if (!scansPorAlvo.has(key)) scansPorAlvo.set(key, []);
-    scansPorAlvo.get(key).push(s);
-  }
   const vulnsPorAlvo = new Map();
   for (const v of vulnsCache) {
     if (!v.alvo) continue;
@@ -918,28 +855,20 @@ function renderDashboard() {
 
   container.innerHTML = alvosCache.map(a => renderAlvoCard(
     a,
-    scansPorAlvo.get(a.id) || [],
     vulnsPorAlvo.get(a.id) || []
   )).join('');
 }
 
-function renderAlvoCard(alvo, scans, vulns) {
-  const ultimo = ultimoScanTs(scans, vulns);
+function renderAlvoCard(alvo, vulns) {
+  const ultimo = ultimoScanTs(vulns);
 
-  // Portas únicas (porta:servico) ordenadas
-  const portasMap = new Map();
-  for (const s of scans) {
-    portasMap.set(`${s.porta}:${s.servico}`, s);
-  }
-  const portasArr = [...portasMap.keys()].sort((a,b) => parseInt(a) - parseInt(b));
-
-  // Vulnerabilidades ordenadas por severidade
-  const ordemSev = { critical:0, high:1, medium:2, low:3, info:4 };
   const vulnsOrd = [...vulns].sort((a,b) => {
-    const sa = ordemSev[(a.severidade||'').toLowerCase()] ?? 5;
-    const sb = ordemSev[(b.severidade||'').toLowerCase()] ?? 5;
+    const sa = ORDEM_SEV[(a.severidade||'').toLowerCase()] ?? 5;
+    const sb = ORDEM_SEV[(b.severidade||'').toLowerCase()] ?? 5;
     return sa - sb;
   });
+
+  const btns = reportButtons(alvo.id);
 
   return `
     <div class="alvo-card">
@@ -953,31 +882,15 @@ function renderAlvoCard(alvo, scans, vulns) {
           <div class="alvo-card-meta">Último scan: ${ultimo ? fmtDate(ultimo) : 'nunca'}</div>
           <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
             <button class="btn btn-sm" onclick="openScanTypeModal(${alvo.id})">▶ NOVO SCAN</button>
-            ${reportsCache[`${alvo.id}:nmap`]
-              ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvo.id},'nmap')">📄 NMAP</button>`
-              : ''}
-            ${reportsCache[`${alvo.id}:nuclei`]
-              ? `<button class="btn btn-sm btn-info" onclick="openSavedReport(${alvo.id},'nuclei')">📄 NUCLEI</button>`
-              : ''}
+            ${btns}
           </div>
         </div>
       </div>
 
       <div class="alvo-section">
-        <div class="alvo-section-title">// PORTAS ABERTAS <span class="count">${portasArr.length}</span></div>
-        ${portasArr.length === 0
-          ? `<div class="alvo-section-empty">Sem scan NMAP executado.</div>`
-          : `<div>${portasArr.map(p => {
-              const [porta, servico] = p.split(':');
-              return `<span class="port-badge">${escapeHtml(porta)} · ${escapeHtml(servico)}</span>`;
-            }).join('')}</div>`
-        }
-      </div>
-
-      <div class="alvo-section">
-        <div class="alvo-section-title">// VULNERABILIDADES <span class="count">${vulnsOrd.length}</span></div>
+        <div class="alvo-section-title">// ACHADOS <span class="count">${vulnsOrd.length}</span></div>
         ${vulnsOrd.length === 0
-          ? `<div class="alvo-section-empty">Sem scan Nuclei executado ou nada encontrado.</div>`
+          ? `<div class="alvo-section-empty">Nenhum scan executado ou nada encontrado.</div>`
           : `<div class="vuln-list">${vulnsOrd.map(v => `
               <div class="vuln-item">
                 ${sevBadge(v.severidade)}
@@ -994,11 +907,9 @@ function renderAlvoCard(alvo, scans, vulns) {
   `;
 }
 
-function ultimoScanTs(scans, vulns) {
+function ultimoScanTs(vulns) {
   let max = null;
-  const consider = (d) => { if (d && (!max || d > max)) max = d; };
-  scans.forEach(s => consider(s.dataHora));
-  vulns.forEach(v => consider(v.dataHora));
+  vulns.forEach(v => { if (v.dataHora && (!max || v.dataHora > max)) max = v.dataHora; });
   return max;
 }
 
@@ -1128,58 +1039,58 @@ function downloadReport() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title.replace(/</g,'&lt;')}</title>
   <style>
-    :root { --accent:#00ff9d; --accent2:#00c8ff; --danger:#ff4757; --warn:#ffa502; }
+    :root { --accent:#ff2b3d; --accent2:#ff8a3d; --danger:#ff2b3d; --warn:#ffb020; }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#0a0c10; color:#c9d1d9; font-family:'Segoe UI',system-ui,sans-serif;
+    body { background:#0b0809; color:#d8c9cb; font-family:'Segoe UI',system-ui,sans-serif;
            line-height:1.7; padding:2.5rem; }
     body::before { content:''; position:fixed; inset:0;
-      background-image:linear-gradient(rgba(0,255,157,.03)1px,transparent 1px),
-        linear-gradient(90deg,rgba(0,255,157,.03)1px,transparent 1px);
+      background-image:linear-gradient(rgba(255,43,61,.035)1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,43,61,.035)1px,transparent 1px);
       background-size:40px 40px; pointer-events:none; z-index:0; }
     .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; }
     header { border-left:3px solid var(--accent); padding:.6rem 1.2rem;
-             margin-bottom:1.8rem; background:rgba(0,255,157,.04); }
+             margin-bottom:1.8rem; background:rgba(255,43,61,.05); }
     header .brand { font-family:monospace; font-size:.75rem; color:var(--accent);
                     letter-spacing:3px; margin-bottom:.25rem; }
     header h1 { font-size:1.5rem; color:#fff; font-weight:700; }
-    .meta { font-family:monospace; font-size:.78rem; color:#4a5568; margin-top:.4rem; }
+    .meta { font-family:monospace; font-size:.78rem; color:#7a5c60; margin-top:.4rem; }
     .meta .tag { display:inline-block; border:1px solid var(--accent); color:var(--accent);
                  padding:.1rem .45rem; margin-right:.4rem; font-size:.72rem; letter-spacing:1px; }
-    .generated { font-family:monospace; font-size:.72rem; color:#4a5568;
-                 margin-bottom:2rem; border-bottom:1px solid #1e2530; padding-bottom:.8rem; }
-    .content { background:#0f1318; border:1px solid #1e2530; padding:1.75rem 2rem;
+    .generated { font-family:monospace; font-size:.72rem; color:#7a5c60;
+                 margin-bottom:2rem; border-bottom:1px solid #2b1d20; padding-bottom:.8rem; }
+    .content { background:#150f11; border:1px solid #2b1d20; padding:1.75rem 2rem;
                border-top:2px solid var(--accent); }
     .content p { margin:.6rem 0; }
     .content h1,.content h2 { color:var(--accent); font-family:monospace;
-      letter-spacing:1px; margin:1.4rem 0 .5rem; border-bottom:1px solid #1e2530; padding-bottom:.3rem; }
+      letter-spacing:1px; margin:1.4rem 0 .5rem; border-bottom:1px solid #2b1d20; padding-bottom:.3rem; }
     .content h3,.content h4 { color:var(--accent2); font-family:monospace; margin:1rem 0 .35rem; }
     .content ul { padding-left:1.4rem; margin:.5rem 0; }
     .content li { margin:.25rem 0; }
     .content strong { color:#fff; }
     .content em { color:var(--warn); font-style:normal; }
-    .content code { background:#0a0c10; border:1px solid #1e2530; color:var(--accent2);
+    .content code { background:#0b0809; border:1px solid #2b1d20; color:var(--accent2);
                     font-family:monospace; font-size:.85em; padding:.1em .4em; }
-    footer { margin-top:2rem; font-family:monospace; font-size:.7rem; color:#4a5568;
-             text-align:center; border-top:1px solid #1e2530; padding-top:.8rem; }
+    footer { margin-top:2rem; font-family:monospace; font-size:.7rem; color:#7a5c60;
+             text-align:center; border-top:1px solid #2b1d20; padding-top:.8rem; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="brand">// CLP SCANNER</div>
+      <div class="brand">// CLP OFFENSIVE</div>
       <h1>${title.replace(/</g,'&lt;')}</h1>
       <div class="meta">${meta}</div>
     </header>
     <div class="generated">Gerado em: ${now}</div>
     <div class="content"><p>${mdToHtml(texto)}</p></div>
-    <footer>CLP Network Scanner · Relatório gerado automaticamente</footer>
+    <footer>CLP Offensive Platform · Relatório gerado automaticamente</footer>
   </div>
 </body>
 </html>`;
 
   const blob    = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url     = URL.createObjectURL(blob);
-  const tipo    = title.toLowerCase().includes('nuclei') ? 'nuclei' : 'nmap';
+  const tipo    = (title.match(/RELAT[ÓO]RIO\s+([A-Z0-9_-]+)/i)?.[1] || 'scan').toLowerCase();
   const filename = `relatorio-${tipo}-${new Date().toISOString().slice(0,10)}.html`;
 
   const old = document.getElementById('report-download-link');

@@ -6,11 +6,11 @@ RUN apt-get update && apt-get install -y \
     ansible \
     python3 \
     python3-pip \
-    nmap \
     openssh-client \
     wget \
     unzip \
-    hydra \
+    nikto \
+    nuclei \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v3.2.0/nuclei_3.2.0_linux_amd64.zip \

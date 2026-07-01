@@ -1,0 +1,19 @@
+---
+- name: Nikto Audit (web server scan)
+  hosts: all
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Executar Nikto contra o Alvo
+      command: "nikto -h {{ inventory_hostname }} -Format xml -output /tmp/nikto.xml -nointeractive -maxtime 60s -timeout 5"
+      register: nikto_run
+      ignore_errors: true
+
+    - name: Ler resultado do Nikto (XML)
+      command: "cat /tmp/nikto.xml"
+      register: nikto_raw
+      ignore_errors: true
+
+    - name: Imprimir saída do nikto
+      debug:
+        msg: "{{ nikto_raw.stdout }}"

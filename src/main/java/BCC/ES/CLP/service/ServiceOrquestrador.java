@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import BCC.ES.CLP.dto.ScanRawResult;
 import BCC.ES.CLP.exceptions.AlvoNaoEncontradoException;
 import BCC.ES.CLP.exceptions.ScanOrquestracaoException;
-import BCC.ES.CLP.exceptions.TimeoutScan;
 import BCC.ES.CLP.model.Alvo;
 import BCC.ES.CLP.model.Select;
+import BCC.ES.CLP.model.User;
 import BCC.ES.CLP.repository.RepositoryAlvo;
 
 @Service
@@ -29,9 +29,9 @@ public class ServiceOrquestrador {
         this.executores = executores;
     }
 
-    public CompletableFuture<ScanRawResult> executarScan(Long id, Select select, String executorNome) {
+    public CompletableFuture<ScanRawResult> executarScan(Long id, Select select, String executorNome, User dono) {
         return CompletableFuture.supplyAsync(() -> {
-            Alvo alvo = repositoryAlvo.findById(id).orElseThrow(AlvoNaoEncontradoException::new);
+            Alvo alvo = repositoryAlvo.findByIdAndDono(id, dono).orElseThrow(AlvoNaoEncontradoException::new);
 
             ExecutorStrategy executor = executores.get(executorNome);
             if (executor == null) {
@@ -52,14 +52,7 @@ public class ServiceOrquestrador {
 
                 System.out.println("LOG DO SCAN:\n" + output);
 
-                boolean finished = process.waitFor(90, java.util.concurrent.TimeUnit.SECONDS);
-
-                if (!finished) {
-                    process.destroyForcibly();
-                    throw new TimeoutScan("Timeout no scan");
-                }
-
-                return new ScanRawResult(alvo.getIp(), output);
+                return new ScanRawResult(alvo.getId(), alvo.getIp(), output);
             } catch (Exception e) {
                 throw new ScanOrquestracaoException(
                         "Falha no scan em " + alvo.getIp(), e);
