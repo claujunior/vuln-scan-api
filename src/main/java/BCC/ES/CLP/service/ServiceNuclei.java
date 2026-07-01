@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class ServiceNuclei implements ScanStrategy {
+public class ServiceNuclei extends ScanTemplate {
 
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final RepositoryAlvo repositoryAlvo;
@@ -25,12 +25,14 @@ public class ServiceNuclei implements ScanStrategy {
 
     public ServiceNuclei(RepositoryVulnerabilidade repositoryVulnerabilidade,
                          RepositoryAlvo repositoryAlvo,
-                         LlmService llmService) {
+                         LlmService llmService,
+                         ServiceOrquestrador serviceOrquestrador) {
+        super(serviceOrquestrador);
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
         this.repositoryAlvo = repositoryAlvo;
         this.llmService = llmService;
     }
-
+    @Override
     @Transactional
     public String processar(ScanRawResult resultado) {
         List<JsonNode> vulns = extrairResultados(resultado.rawOutput());

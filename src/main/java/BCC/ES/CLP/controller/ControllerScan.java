@@ -17,13 +17,12 @@ import BCC.ES.CLP.model.Scan;
 public class ControllerScan {
 
 
-    private final ServiceOrquestrador serviceOrquestrador;
+
 
     private final ServiceScan serviceScan;
 
-    public ControllerScan(ServiceScan serviceScan,ServiceOrquestrador serviceOrquestrador){
+    public ControllerScan(ServiceScan serviceScan){
         this.serviceScan=serviceScan;
-        this.serviceOrquestrador=serviceOrquestrador;
     }
 
     @GetMapping("/get")

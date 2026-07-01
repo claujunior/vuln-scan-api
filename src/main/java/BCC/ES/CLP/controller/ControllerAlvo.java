@@ -5,6 +5,7 @@ package BCC.ES.CLP.controller;
 import java.util.List;
 
 
+import BCC.ES.CLP.service.ServiceAlvo;
 import BCC.ES.CLP.service.ServiceOrquestrador;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,33 +19,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import BCC.ES.CLP.model.Alvo;
-import BCC.ES.CLP.service.ServiceInterface;
+
 
 @RestController
 @RequestMapping("/Alvo")
 public class ControllerAlvo {
 
 
-   private final ServiceInterface serviceInterface;
+   private final ServiceAlvo serviceAlvo;
 
-   public ControllerAlvo(ServiceInterface serviceInterface){
-       this.serviceInterface=serviceInterface;
+   public ControllerAlvo(ServiceAlvo serviceAlvo){
+       this.serviceAlvo=serviceAlvo;
    }
 
    @GetMapping("/get")
    public ResponseEntity<List<Alvo>> obterAlvos(){
-        return ResponseEntity.ok(serviceInterface.allAlvos());
+        return ResponseEntity.ok(serviceAlvo.allAlvos());
    }
 
    @PostMapping("/post")
    public ResponseEntity<Alvo> cadastrarAlvos(@RequestBody Alvo alvo){
-      serviceInterface.salvarAlvo(alvo);
+      serviceAlvo.salvarAlvo(alvo);
       return ResponseEntity.ok(alvo);
    }
 
 
     @DeleteMapping("/delete/{id}")
       public ResponseEntity<Alvo> deleteAlvo(@PathVariable Long id){
-        return ResponseEntity.ok(serviceInterface.deletarAlvo(id));
+        return ResponseEntity.ok(serviceAlvo.deletarAlvo(id));
     }
 }

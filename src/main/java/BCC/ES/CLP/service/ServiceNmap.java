@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class ServiceNmap implements ScanStrategy {
+public class ServiceNmap extends ScanTemplate {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryAlvo repositoryAlvo;
@@ -24,12 +24,14 @@ public class ServiceNmap implements ScanStrategy {
 
     public ServiceNmap(RepositoryScan repositoryScan,
                        RepositoryAlvo repositoryAlvo,
-                       LlmService llmService) {
+                       LlmService llmService,
+                       ServiceOrquestrador serviceOrquestrador) {
+        super(serviceOrquestrador);
         this.repositoryScan = repositoryScan;
         this.repositoryAlvo = repositoryAlvo;
         this.llmService = llmService;
     }
-
+    @Override
     @Transactional
     public String processar(ScanRawResult resultado) {
         Pattern pattern = Pattern.compile("(\\d+)/tcp\\s+open\\s+(\\w+)");

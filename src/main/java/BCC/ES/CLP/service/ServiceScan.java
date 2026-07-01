@@ -17,10 +17,7 @@ public class ServiceScan {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
-    private final ServiceOrquestrador serviceOrquestrador;
-    private final ServiceNmap serviceNmap;
-    private final ServiceNuclei serviceNuclei;
-    private final Map<Select, ScanStrategy> strategies;
+    private final Map<Select, ScanTemplate> templates;
 
     public ServiceScan(RepositoryScan repositoryScan,
                        RepositoryVulnerabilidade repositoryVulnerabilidade,
@@ -29,10 +26,7 @@ public class ServiceScan {
                        ServiceNuclei serviceNuclei) {
         this.repositoryScan = repositoryScan;
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
-        this.serviceOrquestrador = serviceOrquestrador;
-        this.serviceNmap = serviceNmap;
-        this.serviceNuclei = serviceNuclei;
-        this.strategies = Map.of(
+        this.templates = Map.of(
                 Select.NMAP,   serviceNmap,
                 Select.NUCLEI, serviceNuclei
         );
@@ -49,10 +43,7 @@ public class ServiceScan {
     }
 
     public String seletor(Long id, Select select, String executor) {
-        ScanRawResult resultado = serviceOrquestrador.executarScan(id, select, executor).join();
-
-        ScanStrategy strategy = strategies.get(select);
-        ScanSeletor seletor = new ScanSeletor(strategy);
-        return seletor.executar(resultado);
+        ScanTemplate template = templates.get(select);
+        return template.executar(id, select, executor);
     }
 }

@@ -14,7 +14,7 @@ import BCC.ES.CLP.repository.RepositoryAlvo;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ServiceAlvo implements ServiceInterface {
+public class ServiceAlvo {
     
     private final RepositoryAlvo repositoryAlvo;
     private final RepositoryScan repositoryScan;
@@ -28,13 +28,13 @@ public class ServiceAlvo implements ServiceInterface {
         this.repositoryVulnerabilidade = repositoryVulnerabilidade; 
     }
     
-    @Override
+
     @Transactional(readOnly = true)
     public List<Alvo> allAlvos() {
         return repositoryAlvo.findAll();
     }
     
-    @Override
+
     @Transactional
     public void salvarAlvo(Alvo alvo) {
         // Validação e resolução de IP a partir da URL
@@ -60,7 +60,7 @@ public class ServiceAlvo implements ServiceInterface {
     }
     
     
-    @Override
+
     @Transactional
     public Alvo deletarAlvo(Long id) {
         Alvo alvoEncontrado = repositoryAlvo.findById(id)
