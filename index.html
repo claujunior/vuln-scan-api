@@ -585,6 +585,10 @@
     <div class="executor-choices" id="executor-choices">
       <!-- preenchido via JS -->
     </div>
+    <label>Formato de saída</label>
+    <div class="executor-choices" id="formato-choices">
+      <!-- preenchido via JS -->
+    </div>
     <div class="scan-type-list" id="scan-type-list">
       <!-- preenchido via JS -->
     </div>
@@ -636,6 +640,16 @@ const EXECUTORS = [
   { id: 'baremetal', nome: 'BARE METAL', desc: 'Roda o playbook direto no host, sem container' }
 ];
 let selectedExecutor = EXECUTORS[0].id;
+
+// Formatos de saída do resultado do scan. Precisa bater com o enum
+// FormatoSaida no backend. Para suportar um novo formato, basta adicionar um
+// item aqui e a SaidaStrategy correspondente no backend.
+const FORMATOS = [
+  { id: 'RELATORIO_LLM', nome: 'RELATÓRIO IA', desc: 'Relatório em linguagem natural gerado pela LLM' },
+  { id: 'JSON',          nome: 'JSON',          desc: 'Dados já interpretados do scan (portas/vulnerabilidades), em JSON' },
+  { id: 'RAW',           nome: 'BRUTO',         desc: 'Saída pura da ferramenta, sem nenhum parsing' }
+];
+let selectedFormato = FORMATOS[0].id;
 
 // ---- UTILS ----
 function toast(msg, type='success') {
@@ -1006,11 +1020,13 @@ function ultimoScanTs(scans, vulns) {
 function openScanTypeModal(alvoId) {
   scanTargetId = alvoId;
   selectedExecutor = EXECUTORS[0].id;
+  selectedFormato = FORMATOS[0].id;
   const alvo = alvosCache.find(a => a.id === alvoId);
   document.getElementById('scan-type-alvo').textContent =
     alvo ? (alvo.ip || alvo.url || `#${alvoId}`) : `#${alvoId}`;
 
   renderExecutorChoices();
+  renderFormatoChoices();
 
   document.getElementById('scan-type-list').innerHTML = SCAN_TYPES.map(t => `
     <div class="scan-type-card" onclick="runScan('${t.id}')">
@@ -1036,6 +1052,20 @@ function selectExecutor(id) {
   renderExecutorChoices();
 }
 
+function renderFormatoChoices() {
+  document.getElementById('formato-choices').innerHTML = FORMATOS.map(f => `
+    <button type="button"
+            class="executor-chip ${f.id === selectedFormato ? 'active' : ''}"
+            title="${escapeHtml(f.desc)}"
+            onclick="selectFormato('${f.id}')">${escapeHtml(f.nome)}</button>
+  `).join('');
+}
+
+function selectFormato(id) {
+  selectedFormato = id;
+  renderFormatoChoices();
+}
+
 function closeScanTypeModal() {
   document.getElementById('scan-type-modal').classList.remove('open');
   scanTargetId = null;
@@ -1045,13 +1075,14 @@ async function runScan(tipo) {
   if (!scanTargetId) return;
   const id = scanTargetId;
   const executor = selectedExecutor;
+  const formato = selectedFormato;
   const alvo = alvosCache.find(a => a.id === id);
   const alvoLabel = alvo ? (alvo.ip || alvo.url || `#${id}`) : `#${id}`;
   closeScanTypeModal();
 
   openReportModal(tipo, alvoLabel, executor);
   try {
-    const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}`, {method:'POST'});
+    const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}/${formato}`, {method:'POST'});
     const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
     reportsCache[`${id}:${tipo}`] = { tipo, executor, alvoLabel, texto, ts: new Date().toISOString() };
     setReportContent(texto);

@@ -2,6 +2,7 @@ package BCC.ES.CLP.controller;
 
 import java.util.List;
 
+import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Select;
 import BCC.ES.CLP.service.ServiceOrquestrador;
 import BCC.ES.CLP.service.ServiceScan;
@@ -31,10 +32,12 @@ public class ControllerScan {
         return ResponseEntity.ok(serviceScan.allScan());
     }
 
-    @PostMapping("/post/{id}/{tipo}/{executor}")
-    public ResponseEntity<String> executar(@PathVariable Long id, @PathVariable String tipo, @PathVariable String executor) {
+    @PostMapping("/post/{id}/{tipo}/{executor}/{formato}")
+    public ResponseEntity<String> executar(@PathVariable Long id, @PathVariable String tipo,
+                                            @PathVariable String executor, @PathVariable String formato) {
         Select select = Select.valueOf(tipo.toUpperCase());
-        return ResponseEntity.ok(serviceScan.seletor(id,select, executor));
+        FormatoSaida formatoSaida = FormatoSaida.valueOf(formato.toUpperCase());
+        return ResponseEntity.ok(serviceScan.seletor(id, select, executor, formatoSaida));
     }
 
 }

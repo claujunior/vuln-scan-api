@@ -1,8 +1,12 @@
 package BCC.ES.CLP.service;
 
+import BCC.ES.CLP.dto.DadosNuclei;
+import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.dto.ScanRawResult;
+import BCC.ES.CLP.dto.VulnerabilidadeResumo;
 import BCC.ES.CLP.exceptions.ErroAoEncontrarIp;
 import BCC.ES.CLP.model.Alvo;
+import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Vulnerabilidade;
 import BCC.ES.CLP.repository.RepositoryAlvo;
 import BCC.ES.CLP.repository.RepositoryVulnerabilidade;
@@ -13,24 +17,34 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ServiceNuclei extends ScanTemplate {
 
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final RepositoryAlvo repositoryAlvo;
-    private final LlmService llmService;
+    private final FormatoSaidaContexto formatoSaidaContexto;
+    private final Map<FormatoSaida, SaidaStrategy> estrategias;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public ServiceNuclei(RepositoryVulnerabilidade repositoryVulnerabilidade,
                          RepositoryAlvo repositoryAlvo,
-                         LlmService llmService,
+                         FormatoSaidaContexto formatoSaidaContexto,
+                         RelatorioLlmStrategy relatorioLlmStrategy,
+                         JsonStrategy jsonStrategy,
+                         SaidaBrutaStrategy saidaBrutaStrategy,
                          ServiceOrquestrador serviceOrquestrador) {
         super(serviceOrquestrador);
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
         this.repositoryAlvo = repositoryAlvo;
-        this.llmService = llmService;
+        this.formatoSaidaContexto = formatoSaidaContexto;
+        this.estrategias = Map.of(
+                FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy,
+                FormatoSaida.JSON,          jsonStrategy,
+                FormatoSaida.RAW,           saidaBrutaStrategy
+        );
     }
     @Override
     @Transactional
@@ -38,13 +52,14 @@ public class ServiceNuclei extends ScanTemplate {
         List<JsonNode> vulns = extrairResultados(resultado.rawOutput());
 
         if (vulns.isEmpty()) {
-            return "Nenhuma vulnerabilidade encontrada para " + resultado.ip();
+            DadosScan dados = new DadosNuclei(resultado.ip(), List.of(), resultado.rawOutput());
+            return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
         }
 
         Alvo alvo = repositoryAlvo.findByIp(resultado.ip())
                 .orElseThrow(() -> new ErroAoEncontrarIp("IP não encontrado: " + resultado.ip()));
 
-        StringBuilder resumo = new StringBuilder();
+        List<VulnerabilidadeResumo> resumo = new ArrayList<>();
         for (JsonNode vuln : vulns) {
             String templateId = texto(vuln.path("template-id"), "unknown");
             String nome       = texto(vuln.path("info").path("name"), "unknown");
@@ -54,12 +69,11 @@ public class ServiceNuclei extends ScanTemplate {
             repositoryVulnerabilidade.save(
                     new Vulnerabilidade(null, null, templateId, nome, severidade, matchedAt, alvo));
 
-            resumo.append(templateId).append(" [").append(severidade).append("] em ")
-                    .append(matchedAt).append("; ");
+            resumo.add(new VulnerabilidadeResumo(templateId, nome, severidade, matchedAt));
         }
 
-        return llmService.perguntar(resumo
-                + " faça um relatório sobre as vulnerabilidades encontradas e recomendações de correção");
+        DadosScan dados = new DadosNuclei(resultado.ip(), resumo, resultado.rawOutput());
+        return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
     }
 
     private List<JsonNode> extrairResultados(String ansibleOutput) {

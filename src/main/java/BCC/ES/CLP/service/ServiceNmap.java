@@ -1,9 +1,12 @@
 package BCC.ES.CLP.service;
 
+import BCC.ES.CLP.dto.DadosNmap;
+import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.dto.ScanRawResult;
 import BCC.ES.CLP.exceptions.ErroAoEncontrarIp;
 import BCC.ES.CLP.exceptions.PortasFechadas;
 import BCC.ES.CLP.model.Alvo;
+import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Scan;
 import BCC.ES.CLP.repository.RepositoryAlvo;
 import BCC.ES.CLP.repository.RepositoryScan;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,16 +24,25 @@ public class ServiceNmap extends ScanTemplate {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryAlvo repositoryAlvo;
-    private final LlmService llmService;
+    private final FormatoSaidaContexto formatoSaidaContexto;
+    private final Map<FormatoSaida, SaidaStrategy> estrategias;
 
     public ServiceNmap(RepositoryScan repositoryScan,
                        RepositoryAlvo repositoryAlvo,
-                       LlmService llmService,
+                       FormatoSaidaContexto formatoSaidaContexto,
+                       RelatorioLlmStrategy relatorioLlmStrategy,
+                       JsonStrategy jsonStrategy,
+                       SaidaBrutaStrategy saidaBrutaStrategy,
                        ServiceOrquestrador serviceOrquestrador) {
         super(serviceOrquestrador);
         this.repositoryScan = repositoryScan;
         this.repositoryAlvo = repositoryAlvo;
-        this.llmService = llmService;
+        this.formatoSaidaContexto = formatoSaidaContexto;
+        this.estrategias = Map.of(
+                FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy,
+                FormatoSaida.JSON,          jsonStrategy,
+                FormatoSaida.RAW,           saidaBrutaStrategy
+        );
     }
     @Override
     @Transactional
@@ -54,8 +67,7 @@ public class ServiceNmap extends ScanTemplate {
             repositoryScan.save(new Scan(null, null, Integer.parseInt(parts[0]), parts[1], alvo));
         }
 
-        String contexto = "{\"host\":\"" + resultado.ip() + "\",\"portas\":\"" + portas + "\"}";
-        return llmService.perguntar(contexto
-                + " faça um relatorio sobre as portas e os servicos e diga as vulnerabilidades de seguranca");
+        DadosScan dados = new DadosNmap(resultado.ip(), portas, resultado.rawOutput());
+        return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
     }
 }
