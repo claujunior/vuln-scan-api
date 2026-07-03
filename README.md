@@ -1,5 +1,5 @@
-🛡️ Network Scanner API
-API REST para monitoramento e análise de vulnerabilidades de rede, construída com Java + Spring Boot. A aplicação orquestra scans automatizados com Nmap e Nuclei dentro de containers Docker isolados via playbooks Ansible, e utiliza uma LLM (OpenRouter) para gerar relatórios inteligentes sobre os resultados.
+🛡️ Red Team Recon Plataform é uma aplicação do framework VulScan, sendo uma
+API REST para reconhecimento de vulnerabilidades a serem exploradas, construída com Java + Spring Boot. A aplicação orquestra scans com Nikto e Nuclei via playbooks Ansible, isolados dentro de containers Docker ou com execuçao em baremetal e utiliza uma LLM (OpenRouter) para gerar relatórios inteligentes sobre os resultados a serem explorados.
 
 # Disclaimer
 **Atenção:** Esta ferramenta foi desenvolvida exclusivamente para fins educacionais, de pesquisa e para uso em ambientes de teste controlados e devidamente autorizados. O uso em redes, sistemas ou aplicações sem permissão explícita do proprietário é ilegal e pode resultar em sanções civis e criminais.
@@ -15,6 +15,7 @@ Ao utilizar este projeto, você concorda em seguir todas as leis e regulamentos 
 * Docker e Docker Compose
 * Java 17+
 * IntelliJ (Opcional)
+- para rodar as ferramentas selecionadas em baremetal é necessário instalar elas
 
 ## Obtendo a chave da API do OpenRouter
 
@@ -74,7 +75,7 @@ docker images | grep scanner-image   # imagem deve aparecer
 
 ```shell
 chmod +x mvnw
-export $(cat .env | xargs) && sudo ./mvnw spring-boot:run
+sudo ./mvnw spring-boot:run
 ```
 
 A aplicação vai iniciar na porta **8080**.

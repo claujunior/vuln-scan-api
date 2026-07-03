@@ -3,20 +3,24 @@ package BCC.ES.CLP.service;
 import java.net.InetAddress;
 import java.util.List;
 
-import BCC.ES.CLP.exceptions.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import BCC.ES.CLP.exceptions.AlvoInvalido;
+import BCC.ES.CLP.exceptions.AlvoJaRegistradoException;
+import BCC.ES.CLP.exceptions.AlvoNaoEncontradoException;
+import BCC.ES.CLP.exceptions.UrlInvalida;
+import BCC.ES.CLP.model.Alvo;
 import BCC.ES.CLP.model.Scan;
 import BCC.ES.CLP.model.User;
 import BCC.ES.CLP.model.Vulnerabilidade;
+import BCC.ES.CLP.repository.RepositoryAlvo;
 import BCC.ES.CLP.repository.RepositoryScan;
 import BCC.ES.CLP.repository.RepositoryVulnerabilidade;
-import org.springframework.stereotype.Service;
-import BCC.ES.CLP.model.Alvo;
-import BCC.ES.CLP.repository.RepositoryAlvo;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ServiceAlvo implements ServiceInterface {
-
+    
     private final RepositoryAlvo repositoryAlvo;
     private final RepositoryScan repositoryScan;
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
@@ -28,14 +32,14 @@ public class ServiceAlvo implements ServiceInterface {
         this.repositoryScan = repositoryScan;
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
     }
+    
 
-    @Override
     @Transactional(readOnly = true)
     public List<Alvo> allAlvos(User dono) {
         return repositoryAlvo.findByDono(dono);
     }
+    
 
-    @Override
     @Transactional
     public void salvarAlvo(Alvo alvo, User dono) {
         resolverEValidar(alvo);
@@ -47,7 +51,6 @@ public class ServiceAlvo implements ServiceInterface {
         repositoryAlvo.save(alvo);
     }
 
-    @Override
     @Transactional
     public Alvo atualizarAlvo(Long id, Alvo dados, User dono) {
         Alvo alvo = repositoryAlvo.findByIdAndDono(id, dono)
@@ -65,7 +68,6 @@ public class ServiceAlvo implements ServiceInterface {
         return repositoryAlvo.save(alvo);
     }
 
-    @Override
     @Transactional
     public Alvo deletarAlvo(Long id, User dono) {
         Alvo alvoEncontrado = repositoryAlvo.findByIdAndDono(id, dono)

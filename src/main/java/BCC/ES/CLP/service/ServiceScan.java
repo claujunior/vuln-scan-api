@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import BCC.ES.CLP.dto.ScanRawResult;
+import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Scan;
 import BCC.ES.CLP.model.Select;
 import BCC.ES.CLP.model.User;
@@ -19,23 +19,21 @@ public class ServiceScan {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
-    private final ServiceOrquestrador serviceOrquestrador;
-    private final NiktoService serviceNikto;
-    private final Map<Select, ScanStrategy> strategies;
+    private final Map<Select, ScanTemplate> templates;
+    private final FormatoSaidaContexto formatoSaidaContexto;
 
     public ServiceScan(RepositoryScan repositoryScan,
                        RepositoryVulnerabilidade repositoryVulnerabilidade,
-                       ServiceOrquestrador serviceOrquestrador,
                        NiktoService serviceNikto,
-                       NucleiService serviceNuclei) {
+                       NucleiService serviceNuclei,
+                       FormatoSaidaContexto formatoSaidaContexto) {
         this.repositoryScan = repositoryScan;
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
-        this.serviceOrquestrador = serviceOrquestrador;
-        this.serviceNikto = serviceNikto;
-        this.strategies = Map.of(
+        this.templates = Map.of(
                 Select.NIKTO, serviceNikto,
                 Select.NUCLEI, serviceNuclei
         );
+        this.formatoSaidaContexto = formatoSaidaContexto;
     }
 
     @Transactional(readOnly = true)
@@ -48,11 +46,13 @@ public class ServiceScan {
         return repositoryVulnerabilidade.findByAlvo_Dono(dono);
     }
 
-    public String seletor(Long id, Select select, String executor, User dono) {
-        ScanRawResult resultado = serviceOrquestrador.executarScan(id, select, executor, dono).join();
-
-        ScanStrategy strategy = strategies.get(select);
-        ScanSeletor seletor = new ScanSeletor(strategy);
-        return seletor.executar(resultado);
+    public String seletor(Long id, Select select, String executor, FormatoSaida formato, User dono) {
+        ScanTemplate template = templates.get(select);
+        formatoSaidaContexto.definir(formato);
+        try {
+            return template.executar(id, select, executor, formato, dono);
+        } finally {
+            formatoSaidaContexto.limpar();
+        }
     }
 }

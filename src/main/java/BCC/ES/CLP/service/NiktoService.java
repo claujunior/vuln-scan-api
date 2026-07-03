@@ -2,15 +2,20 @@ package BCC.ES.CLP.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import BCC.ES.CLP.dto.DadosNikto;
+import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.dto.ScanRawResult;
+import BCC.ES.CLP.dto.VulnerabilidadeResumo;
 import BCC.ES.CLP.exceptions.ErroAoEncontrarIp;
 import BCC.ES.CLP.model.Alvo;
+import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Vulnerabilidade;
 import BCC.ES.CLP.repository.RepositoryAlvo;
 import BCC.ES.CLP.repository.RepositoryVulnerabilidade;
@@ -18,11 +23,12 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
-public class NiktoService implements ScanStrategy {
+public class NiktoService extends ScanTemplate {
 
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final RepositoryAlvo repositoryAlvo;
-    private final LlmService llmService;
+    private final FormatoSaidaContexto formatoSaidaContexto;
+    private final Map<FormatoSaida, SaidaStrategy> estrategias;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -35,35 +41,42 @@ public class NiktoService implements ScanStrategy {
 
     public NiktoService(RepositoryVulnerabilidade repositoryVulnerabilidade,
                         RepositoryAlvo repositoryAlvo,
-                        LlmService llmService) {
+                        FormatoSaidaContexto formatoSaidaContexto,
+                        RelatorioLlmStrategy relatorioLlmStrategy,
+                        ServiceOrquestrador serviceOrquestrador) {
+        super(serviceOrquestrador);
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
         this.repositoryAlvo = repositoryAlvo;
-        this.llmService = llmService;
+        this.formatoSaidaContexto = formatoSaidaContexto;
+        this.estrategias = Map.of(
+                FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy
+        );
     }
 
+    @Override
     @Transactional
     public String processar(ScanRawResult resultado) {
         List<Achado> achados = extrairAchados(resultado.rawOutput());
 
         if (achados.isEmpty()) {
-            return "Nenhuma vulnerabilidade encontrada para " + resultado.ip();
+            DadosScan dados = new DadosNikto(resultado.ip(), List.of(), resultado.rawOutput());
+            return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
         }
 
         Alvo alvo = repositoryAlvo.findById(resultado.alvoId())
                 .orElseThrow(() -> new ErroAoEncontrarIp("Alvo não encontrado: " + resultado.alvoId()));
 
-        StringBuilder resumo = new StringBuilder();
+        List<VulnerabilidadeResumo> resumo = new ArrayList<>();
         for (Achado a : achados) {
             String severidade = "info"; // nikto não informa severidade
             repositoryVulnerabilidade.save(
                     new Vulnerabilidade(null, null, a.templateId(), a.nome(), severidade, a.matchedAt(), alvo));
 
-            resumo.append(a.templateId()).append(" [").append(severidade).append("] em ")
-                    .append(a.matchedAt()).append(" - ").append(a.nome()).append("; ");
+            resumo.add(new VulnerabilidadeResumo(a.templateId(), a.nome(), severidade, a.matchedAt()));
         }
 
-        return llmService.perguntar(resumo
-                + " faça um relatório sobre as vulnerabilidades encontradas e recomendações de correção");
+        DadosScan dados = new DadosNikto(resultado.ip(), resumo, resultado.rawOutput());
+        return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
     }
 
     private record Achado(String templateId, String nome, String matchedAt) {}
