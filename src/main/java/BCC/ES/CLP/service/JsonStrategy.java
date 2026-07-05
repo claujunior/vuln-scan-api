@@ -1,6 +1,5 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.model.FormatoSaida;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
@@ -20,7 +19,7 @@ public class JsonStrategy implements SaidaStrategy {
     }
 
     @Override
-    public String gerar(DadosScan dados) {
-        return MAPPER.writeValueAsString(dados);
+    public String gerar(Object dadosEstruturados, String prompt, String saidaBruta) {
+        return MAPPER.writeValueAsString(dadosEstruturados);
     }
 }

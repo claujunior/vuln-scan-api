@@ -1,13 +1,12 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.model.FormatoSaida;
 import org.springframework.stereotype.Service;
 
 /**
- * Comportamento antigo (unico existente antes desta mudanca): manda os dados
- * do scan para a LLM e devolve o relatorio em linguagem natural. Se o scan
- * nao encontrou nada relevante, evita gastar quota chamando a LLM a toa.
+ * Comportamento antigo (unico existente antes do ponto flexivel de formato de
+ * saida): manda o prompt montado por ServiceNmap/ServiceNuclei para a LLM e
+ * devolve o relatorio em linguagem natural.
  */
 @Service
 public class RelatorioLlmStrategy implements SaidaStrategy {
@@ -24,10 +23,7 @@ public class RelatorioLlmStrategy implements SaidaStrategy {
     }
 
     @Override
-    public String gerar(DadosScan dados) {
-        if (dados.vazio()) {
-            return dados.mensagemVazia();
-        }
-        return llmService.perguntar(dados.promptLlm());
+    public String gerar(Object dadosEstruturados, String prompt, String saidaBruta) {
+        return llmService.perguntar(prompt);
     }
 }

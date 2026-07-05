@@ -1,7 +1,5 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.DadosNuclei;
-import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.dto.ScanRawResult;
 import BCC.ES.CLP.dto.VulnerabilidadeResumo;
 import BCC.ES.CLP.exceptions.ErroAoEncontrarIp;
@@ -24,14 +22,12 @@ public class ServiceNuclei extends ScanTemplate {
 
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final RepositoryAlvo repositoryAlvo;
-    private final FormatoSaidaContexto formatoSaidaContexto;
     private final Map<FormatoSaida, SaidaStrategy> estrategias;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public ServiceNuclei(RepositoryVulnerabilidade repositoryVulnerabilidade,
                          RepositoryAlvo repositoryAlvo,
-                         FormatoSaidaContexto formatoSaidaContexto,
                          RelatorioLlmStrategy relatorioLlmStrategy,
                          JsonStrategy jsonStrategy,
                          SaidaBrutaStrategy saidaBrutaStrategy,
@@ -39,27 +35,33 @@ public class ServiceNuclei extends ScanTemplate {
         super(serviceOrquestrador);
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
         this.repositoryAlvo = repositoryAlvo;
-        this.formatoSaidaContexto = formatoSaidaContexto;
         this.estrategias = Map.of(
                 FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy,
                 FormatoSaida.JSON,          jsonStrategy,
                 FormatoSaida.RAW,           saidaBrutaStrategy
         );
     }
+
     @Override
     @Transactional
-    public String processar(ScanRawResult resultado) {
+    public String processar(ScanRawResult resultado, FormatoSaida formato) {
         List<JsonNode> vulns = extrairResultados(resultado.rawOutput());
 
         if (vulns.isEmpty()) {
-            DadosScan dados = new DadosNuclei(resultado.ip(), List.of(), resultado.rawOutput());
-            return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
+            // Atalho so vale para o relatorio de LLM, para nao gastar quota a toa;
+            // JSON/RAW devem devolver a estrutura vazia normalmente.
+            if (formato == FormatoSaida.RELATORIO_LLM) {
+                return "Nenhuma vulnerabilidade encontrada para " + resultado.ip();
+            }
+            Map<String, Object> dados = Map.of("ip", resultado.ip(), "vulnerabilidades", List.of());
+            return estrategias.get(formato).gerar(dados, "", resultado.rawOutput());
         }
 
         Alvo alvo = repositoryAlvo.findByIp(resultado.ip())
                 .orElseThrow(() -> new ErroAoEncontrarIp("IP não encontrado: " + resultado.ip()));
 
         List<VulnerabilidadeResumo> resumo = new ArrayList<>();
+        StringBuilder prompt = new StringBuilder();
         for (JsonNode vuln : vulns) {
             String templateId = texto(vuln.path("template-id"), "unknown");
             String nome       = texto(vuln.path("info").path("name"), "unknown");
@@ -70,10 +72,13 @@ public class ServiceNuclei extends ScanTemplate {
                     new Vulnerabilidade(null, null, templateId, nome, severidade, matchedAt, alvo));
 
             resumo.add(new VulnerabilidadeResumo(templateId, nome, severidade, matchedAt));
+            prompt.append(templateId).append(" [").append(severidade).append("] em ")
+                    .append(matchedAt).append("; ");
         }
+        prompt.append(" faça um relatório sobre as vulnerabilidades encontradas e recomendações de correção");
 
-        DadosScan dados = new DadosNuclei(resultado.ip(), resumo, resultado.rawOutput());
-        return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
+        Map<String, Object> dados = Map.of("ip", resultado.ip(), "vulnerabilidades", resumo);
+        return estrategias.get(formato).gerar(dados, prompt.toString(), resultado.rawOutput());
     }
 
     private List<JsonNode> extrairResultados(String ansibleOutput) {

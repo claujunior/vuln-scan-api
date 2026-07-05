@@ -1,6 +1,5 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.ScanRawResult;
 import BCC.ES.CLP.model.FormatoSaida;
 import BCC.ES.CLP.model.Scan;
 import BCC.ES.CLP.model.Select;
@@ -19,21 +18,18 @@ public class ServiceScan {
     private final RepositoryScan repositoryScan;
     private final RepositoryVulnerabilidade repositoryVulnerabilidade;
     private final Map<Select, ScanTemplate> templates;
-    private final FormatoSaidaContexto formatoSaidaContexto;
 
     public ServiceScan(RepositoryScan repositoryScan,
                        RepositoryVulnerabilidade repositoryVulnerabilidade,
                        ServiceOrquestrador serviceOrquestrador,
                        ServiceNmap serviceNmap,
-                       ServiceNuclei serviceNuclei,
-                       FormatoSaidaContexto formatoSaidaContexto) {
+                       ServiceNuclei serviceNuclei) {
         this.repositoryScan = repositoryScan;
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
         this.templates = Map.of(
                 Select.NMAP,   serviceNmap,
                 Select.NUCLEI, serviceNuclei
         );
-        this.formatoSaidaContexto = formatoSaidaContexto;
     }
 
     @Transactional(readOnly = true)
@@ -48,11 +44,6 @@ public class ServiceScan {
 
     public String seletor(Long id, Select select, String executor, FormatoSaida formato) {
         ScanTemplate template = templates.get(select);
-        formatoSaidaContexto.definir(formato);
-        try {
-            return template.executar(id, select, executor);
-        } finally {
-            formatoSaidaContexto.limpar();
-        }
+        return template.executar(id, select, executor, formato);
     }
 }

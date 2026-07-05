@@ -1,6 +1,5 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.model.FormatoSaida;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +16,7 @@ public class SaidaBrutaStrategy implements SaidaStrategy {
     }
 
     @Override
-    public String gerar(DadosScan dados) {
-        return dados.saidaBruta();
+    public String gerar(Object dadosEstruturados, String prompt, String saidaBruta) {
+        return saidaBruta;
     }
 }

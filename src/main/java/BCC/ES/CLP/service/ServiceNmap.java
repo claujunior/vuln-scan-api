@@ -1,7 +1,5 @@
 package BCC.ES.CLP.service;
 
-import BCC.ES.CLP.dto.DadosNmap;
-import BCC.ES.CLP.dto.DadosScan;
 import BCC.ES.CLP.dto.ScanRawResult;
 import BCC.ES.CLP.exceptions.ErroAoEncontrarIp;
 import BCC.ES.CLP.exceptions.PortasFechadas;
@@ -24,12 +22,10 @@ public class ServiceNmap extends ScanTemplate {
 
     private final RepositoryScan repositoryScan;
     private final RepositoryAlvo repositoryAlvo;
-    private final FormatoSaidaContexto formatoSaidaContexto;
     private final Map<FormatoSaida, SaidaStrategy> estrategias;
 
     public ServiceNmap(RepositoryScan repositoryScan,
                        RepositoryAlvo repositoryAlvo,
-                       FormatoSaidaContexto formatoSaidaContexto,
                        RelatorioLlmStrategy relatorioLlmStrategy,
                        JsonStrategy jsonStrategy,
                        SaidaBrutaStrategy saidaBrutaStrategy,
@@ -37,16 +33,16 @@ public class ServiceNmap extends ScanTemplate {
         super(serviceOrquestrador);
         this.repositoryScan = repositoryScan;
         this.repositoryAlvo = repositoryAlvo;
-        this.formatoSaidaContexto = formatoSaidaContexto;
         this.estrategias = Map.of(
                 FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy,
                 FormatoSaida.JSON,          jsonStrategy,
                 FormatoSaida.RAW,           saidaBrutaStrategy
         );
     }
+
     @Override
     @Transactional
-    public String processar(ScanRawResult resultado) {
+    public String processar(ScanRawResult resultado, FormatoSaida formato) {
         Pattern pattern = Pattern.compile("(\\d+)/tcp\\s+open\\s+(\\w+)");
         Matcher matcher = pattern.matcher(resultado.rawOutput());
 
@@ -67,7 +63,10 @@ public class ServiceNmap extends ScanTemplate {
             repositoryScan.save(new Scan(null, null, Integer.parseInt(parts[0]), parts[1], alvo));
         }
 
-        DadosScan dados = new DadosNmap(resultado.ip(), portas, resultado.rawOutput());
-        return estrategias.get(formatoSaidaContexto.obter()).gerar(dados);
+        String prompt = "{\"host\":\"" + resultado.ip() + "\",\"portas\":\"" + portas + "\"}"
+                + " faça um relatorio sobre as portas e os servicos e diga as vulnerabilidades de seguranca";
+        Map<String, Object> dados = Map.of("ip", resultado.ip(), "portas", portas);
+
+        return estrategias.get(formato).gerar(dados, prompt, resultado.rawOutput());
     }
 }
