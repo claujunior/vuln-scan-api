@@ -352,6 +352,73 @@
   .vuln-name { color: var(--text); }
   .vuln-template { color: var(--muted); font-size: 0.72rem; }
   .vuln-where { color: var(--accent2); font-size: 0.72rem; word-break: break-all; }
+
+  /* ---- MONITORAMENTO ---- */
+  select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 0.85rem;
+    padding: 0.6rem 0.8rem; outline: none; transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .mon-list { display: flex; flex-direction: column; gap: 1.25rem; }
+  .mon-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid var(--accent2);
+  }
+  .mon-card.inactive { border-left-color: var(--muted); opacity: 0.75; }
+  .mon-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 0.75rem;
+  }
+  .mon-body { padding: 1rem 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; }
+  .mon-status { display: flex; align-items: center; gap: 0.6rem; }
+  .mon-status-badge {
+    font-family: var(--mono); font-size: 0.65rem; letter-spacing: 1.5px;
+    padding: 0.2rem 0.6rem; text-transform: uppercase; border: 1px solid var(--muted); color: var(--muted);
+  }
+  .mon-status-badge.on { border-color: var(--accent); color: var(--accent); }
+  .mon-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .toggle {
+    position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0; background: var(--border);
+    transition: 0.2s; border: 1px solid var(--muted);
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px;
+    background: var(--muted); transition: 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { border-color: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(19px); background: var(--accent); }
+
+  /* ---- NOTIFICAÇÕES ---- */
+  .nav-tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; padding: 0 4px; margin-left: 0.4rem;
+    background: var(--danger); color: #fff; font-size: 0.62rem; font-weight: 700;
+    border-radius: 8px; vertical-align: middle;
+  }
+  .notif-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .notif-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid var(--danger); padding: 1rem 1.25rem;
+  }
+  .notif-card.lida { border-left-color: var(--muted); opacity: 0.65; }
+  .notif-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .notif-title { font-family: var(--mono); color: var(--text); font-size: 0.88rem; }
+  .notif-meta { font-family: var(--mono); color: var(--muted); font-size: 0.7rem; margin-top: 0.25rem; }
+  .notif-body {
+    font-family: var(--mono); font-size: 0.8rem; color: var(--text);
+    margin-top: 0.75rem; white-space: pre-wrap; word-wrap: break-word;
+    background: var(--bg); border: 1px solid var(--border); padding: 0.75rem 1rem;
+    max-height: 220px; overflow-y: auto;
+  }
+  .notif-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -427,6 +494,8 @@
     <button class="nav-tab active" onclick="switchTab('dashboard', event)">DASHBOARD</button>
     <button class="nav-tab" onclick="switchTab('alvos', event)">ALVOS</button>
     <button class="nav-tab" onclick="switchTab('scans', event)">HISTÓRICO</button>
+    <button class="nav-tab" onclick="switchTab('monitoramento', event)">MONITORAMENTO</button>
+    <button class="nav-tab" onclick="switchTab('notificacoes', event)">ALERTAS<span class="nav-tab-badge" id="notif-badge" style="display:none">0</span></button>
   </div>
 
   <div class="main">
@@ -536,6 +605,33 @@
             <tr><td colspan="8"><div class="empty"><div class="empty-icon">◌</div>Carregando...</div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- MONITORAMENTO -->
+    <div class="tab-content" id="tab-monitoramento">
+      <div class="section-header">
+        <div class="section-title"><span>//</span> MONITORAMENTO CONTÍNUO</div>
+        <button class="btn btn-sm" onclick="loadMonitoramentos()">↻ ATUALIZAR</button>
+      </div>
+      <p style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;">
+        Auditorias programadas e automatizadas por alvo. Quando um problema é encontrado
+        (portas novas ou vulnerabilidades), um relatório é gerado pela LLM e a equipe é
+        notificada pelo canal escolhido — as notificações aparecem na aba ALERTAS.
+      </p>
+      <div id="monitoramento-list" class="mon-list">
+        <div class="empty"><div class="empty-icon">◌</div>Carregando...</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICAÇÕES -->
+    <div class="tab-content" id="tab-notificacoes">
+      <div class="section-header">
+        <div class="section-title"><span>//</span> ALERTAS DO MONITORAMENTO</div>
+        <button class="btn btn-sm" onclick="loadNotificacoes()">↻ ATUALIZAR</button>
+      </div>
+      <div id="notificacoes-list" class="notif-list">
+        <div class="empty"><div class="empty-icon">◌</div>Carregando...</div>
       </div>
     </div>
 
@@ -773,7 +869,7 @@ async function apiFetch(path, opts={}) {
 // ---- LOAD DATA ----
 async function loadAll() {
   try {
-    await Promise.all([loadAlvos(), loadScans(), loadVulns()]);
+    await Promise.all([loadAlvos(), loadScans(), loadVulns(), loadMonitoramentos(), loadNotificacoes()]);
     setStatus(true);
     updateStats();
     renderDashboard();
@@ -904,6 +1000,215 @@ function sevBadge(sev) {
   const s = (sev||'info').toLowerCase();
   const cls = ['info','low','medium','high','critical'].includes(s) ? `sev-${s}` : 'sev-info';
   return `<span class="vuln-sev ${cls}">${escapeHtml(s)}</span>`;
+}
+
+// ==================== MONITORAMENTO CONTÍNUO ====================
+let monitoramentosCache = [];
+let notificacoesCache = [];
+
+// Ferramentas disponíveis para o scan agendado. Precisa bater com o enum
+// Select no backend.
+const FERRAMENTAS_MON = [
+  { id: 'NMAP',   nome: 'NMAP' },
+  { id: 'NUCLEI', nome: 'NUCLEI' }
+];
+
+// Canais de notificação disponíveis. O `id` precisa bater com o nome do bean
+// NotificadorStrategy no backend (@Component("log"), @Component("webhook")).
+const CANAIS_MON = [
+  { id: 'log',     nome: 'LOG (console do servidor)' },
+  { id: 'webhook', nome: 'WEBHOOK (Slack/Discord)' }
+];
+
+async function loadMonitoramentos() {
+  try {
+    monitoramentosCache = await apiFetch('/Monitoramento/get');
+    renderMonitoramentos();
+  } catch(e) {
+    monitoramentosCache = [];
+    document.getElementById('monitoramento-list').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠</div>${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function monitoramentoDoAlvo(alvoId) {
+  return monitoramentosCache.find(m => m.alvo?.id === alvoId);
+}
+
+function renderMonitoramentos() {
+  const container = document.getElementById('monitoramento-list');
+  if (!alvosCache.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">◌</div>Cadastre um alvo para configurar o monitoramento</div>`;
+    return;
+  }
+  container.innerHTML = alvosCache.map(a => renderMonCard(a, monitoramentoDoAlvo(a.id))).join('');
+}
+
+function renderMonCard(alvo, mon) {
+  const id = alvo.id;
+  const ferramenta = mon?.ferramenta || 'NMAP';
+  const executor = mon?.executor || 'baremetal';
+  const canal = mon?.canalNotificacao || 'log';
+  const intervalo = mon?.intervaloMinutos || 60;
+  const ativo = mon?.ativo || false;
+
+  return `
+    <div class="mon-card ${ativo ? '' : 'inactive'}">
+      <div class="mon-card-header">
+        <div>
+          <div class="alvo-card-id">// ALVO #${id}</div>
+          <div class="alvo-card-title">${escapeHtml(alvo.ip) || '—'}</div>
+          <div class="alvo-card-url">${escapeHtml(alvo.url) || '—'}</div>
+          <div class="mon-meta">${mon
+            ? `Última auditoria: ${mon.ultimaExecucao ? fmtDate(mon.ultimaExecucao) : 'nunca'}`
+            : 'Monitoramento ainda não configurado — ajuste as opções abaixo e clique em SALVAR'}</div>
+        </div>
+        <div class="mon-status">
+          <span class="mon-status-badge ${ativo ? 'on' : ''}">${ativo ? 'ATIVO' : 'INATIVO'}</span>
+          <label class="toggle" title="Ativar/desativar monitoramento">
+            <input type="checkbox" id="mon-ativo-${id}" ${ativo ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="mon-body">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Ferramenta</label>
+          <select id="mon-ferramenta-${id}">
+            ${FERRAMENTAS_MON.map(f => `<option value="${f.id}" ${f.id===ferramenta?'selected':''}>${f.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Execução</label>
+          <select id="mon-executor-${id}">
+            ${EXECUTORS.map(e => `<option value="${e.id}" ${e.id===executor?'selected':''}>${e.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Notificar via</label>
+          <select id="mon-canal-${id}">
+            ${CANAIS_MON.map(c => `<option value="${c.id}" ${c.id===canal?'selected':''}>${c.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Intervalo (minutos)</label>
+          <input type="number" min="1" id="mon-intervalo-${id}" value="${intervalo}">
+        </div>
+      </div>
+      <div class="modal-actions" style="justify-content:flex-start;padding:0 1.25rem 1.25rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="saveMonitoramento(${id})">SALVAR</button>
+        ${mon ? `<button class="btn btn-sm btn-info" onclick="executarMonitoramentoAgora(${id})">▶ RODAR AGORA</button>` : ''}
+        ${mon ? `<button class="btn btn-sm btn-danger" onclick="deleteMonitoramento(${id})">✕ REMOVER</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function saveMonitoramento(alvoId) {
+  const body = {
+    ferramenta: document.getElementById(`mon-ferramenta-${alvoId}`).value,
+    executor: document.getElementById(`mon-executor-${alvoId}`).value,
+    canalNotificacao: document.getElementById(`mon-canal-${alvoId}`).value,
+    intervaloMinutos: parseInt(document.getElementById(`mon-intervalo-${alvoId}`).value, 10) || 60,
+    ativo: document.getElementById(`mon-ativo-${alvoId}`).checked
+  };
+  try {
+    await apiFetch(`/Monitoramento/post/${alvoId}`, {method:'POST', body: JSON.stringify(body)});
+    toast('Monitoramento salvo!', 'success');
+    await loadMonitoramentos();
+  } catch(e) {
+    toast(e.message || 'Erro ao salvar monitoramento', 'error');
+  }
+}
+
+async function executarMonitoramentoAgora(alvoId) {
+  try {
+    toast('Executando auditoria agora, aguarde...', 'success');
+    await apiFetch(`/Monitoramento/executar/${alvoId}`, {method:'POST'});
+    toast('Auditoria concluída! Veja a aba ALERTAS caso algo tenha sido encontrado.', 'success');
+    await loadMonitoramentos();
+    await loadNotificacoes();
+    await loadScans();
+    await loadVulns();
+  } catch(e) {
+    toast(e.message || 'Erro ao executar auditoria', 'error');
+  }
+}
+
+async function deleteMonitoramento(alvoId) {
+  try {
+    await apiFetch(`/Monitoramento/delete/${alvoId}`, {method:'DELETE'});
+    toast('Monitoramento removido!', 'success');
+    await loadMonitoramentos();
+  } catch(e) {
+    toast(e.message || 'Erro ao remover monitoramento', 'error');
+  }
+}
+
+// ==================== NOTIFICAÇÕES / ALERTAS ====================
+async function loadNotificacoes() {
+  try {
+    notificacoesCache = await apiFetch('/Notificacao/get');
+    renderNotificacoes();
+    updateNotifBadge();
+  } catch(e) {
+    notificacoesCache = [];
+    document.getElementById('notificacoes-list').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠</div>${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function updateNotifBadge() {
+  const unread = notificacoesCache.filter(n => !n.lida).length;
+  const badge = document.getElementById('notif-badge');
+  if (unread > 0) {
+    badge.style.display = 'inline-flex';
+    badge.textContent = unread > 99 ? '99+' : unread;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderNotificacoes() {
+  const container = document.getElementById('notificacoes-list');
+  if (!notificacoesCache.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">◌</div>Nenhum alerta até agora</div>`;
+    return;
+  }
+  container.innerHTML = notificacoesCache.map(n => `
+    <div class="notif-card ${n.lida ? 'lida' : ''}">
+      <div class="notif-card-header">
+        <div>
+          <div class="notif-title">${n.nivel === 'ALERTA' ? '⚠ ' : ''}${escapeHtml(n.titulo)}</div>
+          <div class="notif-meta">Alvo: ${escapeHtml(n.alvo?.ip || n.alvo?.url || '—')} &nbsp;·&nbsp; ${fmtDate(n.dataHora)}${n.lida ? ' &nbsp;·&nbsp; lida' : ''}</div>
+        </div>
+        <div class="notif-actions">
+          ${!n.lida ? `<button class="btn btn-sm" onclick="marcarNotificacaoLida(${n.id})">✓ MARCAR LIDA</button>` : ''}
+          <button class="btn btn-sm btn-danger" onclick="deleteNotificacao(${n.id})">✕</button>
+        </div>
+      </div>
+      <div class="notif-body">${escapeHtml(n.mensagem)}</div>
+    </div>
+  `).join('');
+}
+
+async function marcarNotificacaoLida(id) {
+  try {
+    await apiFetch(`/Notificacao/lida/${id}`, {method:'PUT'});
+    await loadNotificacoes();
+  } catch(e) {
+    toast(e.message || 'Erro ao marcar como lida', 'error');
+  }
+}
+
+async function deleteNotificacao(id) {
+  try {
+    await apiFetch(`/Notificacao/delete/${id}`, {method:'DELETE'});
+    toast('Notificação removida!', 'success');
+    await loadNotificacoes();
+  } catch(e) {
+    toast(e.message || 'Erro ao remover notificação', 'error');
+  }
 }
 
 // ---- RENDER DASHBOARD (agrupado por alvo) ----
@@ -1317,8 +1622,10 @@ function switchTab(name, ev) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
-  if (ev?.target) ev.target.classList.add('active');
+  if (ev?.currentTarget) ev.currentTarget.classList.add('active');
   if (name === 'dashboard') renderDashboard();
+  if (name === 'monitoramento') renderMonitoramentos();
+  if (name === 'notificacoes') renderNotificacoes();
 }
 
 // Close modals on overlay click

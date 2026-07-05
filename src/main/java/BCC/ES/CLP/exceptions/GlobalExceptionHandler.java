@@ -98,4 +98,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleUrlInvalida(UrlInvalida ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
+
+    @ExceptionHandler(MonitoramentoNaoEncontrado.class)
+    public ResponseEntity<String> handleMonitoramentoNaoEncontrado(MonitoramentoNaoEncontrado ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NotificacaoNaoEncontrada.class)
+    public ResponseEntity<String> handleNotificacaoNaoEncontrada(NotificacaoNaoEncontrada ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
 }

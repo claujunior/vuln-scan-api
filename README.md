@@ -135,3 +135,41 @@ docker compose -f docker-compose.vulnlab.yml down
 ```
 
 ---
+
+# Monitoramento Contínuo
+
+Além do scan manual, a API permite configurar **auditorias programadas e
+automatizadas por alvo**. Um scheduler interno verifica periodicamente quais
+alvos têm monitoramento ativo e cujo intervalo configurado já venceu, roda o
+scan (reaproveitando o mesmo pipeline do scan manual) e, se encontrar algo
+relevante (portas novas ou vulnerabilidades), gera um relatório via LLM e
+registra uma notificação para a equipe.
+
+**Pontos flexíveis** (configuráveis por alvo, na aba **MONITORAMENTO** do
+frontend):
+
+* **Ferramenta**: `NMAP` ou `NUCLEI`
+* **Execução do scan**: `baremetal` ou `docker`
+* **Canal de notificação**: `log` (console do servidor) ou `webhook`
+  (Slack/Discord — configure `monitoramento.webhook.url` no
+  `application.properties`, ou `WEBHOOK_URL` no `.env`)
+* **Intervalo**: em minutos, por alvo
+
+## Endpoints
+
+| Método | Rota                              | Descrição                                   |
+|--------|-----------------------------------|----------------------------------------------|
+| GET    | `/Monitoramento/get`              | Lista as configurações de monitoramento       |
+| POST   | `/Monitoramento/post/{alvoId}`    | Cria/atualiza a configuração de um alvo       |
+| PUT    | `/Monitoramento/toggle/{alvoId}/{ativo}` | Ativa/desativa rapidamente             |
+| POST   | `/Monitoramento/executar/{alvoId}`| Roda a auditoria imediatamente (útil p/ testes)|
+| DELETE | `/Monitoramento/delete/{alvoId}`  | Remove a configuração                         |
+| GET    | `/Notificacao/get`                | Lista os alertas gerados                      |
+| PUT    | `/Notificacao/lida/{id}`          | Marca um alerta como lido                     |
+| DELETE | `/Notificacao/delete/{id}`        | Remove um alerta                              |
+
+O intervalo de checagem do scheduler (não confundir com o intervalo de cada
+auditoria) é configurável em `monitoramento.scheduler.fixedDelay` (padrão:
+60000 ms).
+
+---
