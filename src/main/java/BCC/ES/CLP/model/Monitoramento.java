@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * Configuracao de monitoramento continuo de um Alvo: auditorias programadas
@@ -56,6 +57,17 @@ public class Monitoramento {
 
     @Column(nullable = false)
     private String canalNotificacao;
+
+    /**
+     * Formato usado para montar o conteudo da notificacao quando a
+     * auditoria encontra um problema (mesmo enum FormatoSaida do scan
+     * manual). RELATORIO_LLM (padrao) gera um resumo em linguagem natural
+     * via LLM; JSON/RAW/HTML entregam a saida ja formatada, sem LLM.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ColumnDefault("'RELATORIO_LLM'")
+    private FormatoSaida formatoSaida;
 
     @Column(nullable = false)
     private int intervaloMinutos;

@@ -53,6 +53,7 @@ public class ServiceMonitoramento {
     private static final int INTERVALO_PADRAO_MINUTOS = 60;
     private static final String CANAL_PADRAO = "log";
     private static final String EXECUTOR_PADRAO = "baremetal";
+    private static final FormatoSaida FORMATO_PADRAO = FormatoSaida.RELATORIO_LLM;
 
     public ServiceMonitoramento(RepositoryMonitoramento repositoryMonitoramento,
                                  RepositoryAlvo repositoryAlvo,
@@ -89,6 +90,9 @@ public class ServiceMonitoramento {
         monitoramento.setCanalNotificacao(
                 (dto.getCanalNotificacao() != null && !dto.getCanalNotificacao().isBlank())
                         ? dto.getCanalNotificacao() : CANAL_PADRAO);
+        monitoramento.setFormatoSaida(
+                (dto.getFormatoSaida() != null && !dto.getFormatoSaida().isBlank())
+                        ? FormatoSaida.valueOf(dto.getFormatoSaida().toUpperCase()) : FORMATO_PADRAO);
         monitoramento.setIntervaloMinutos(dto.getIntervaloMinutos() > 0 ? dto.getIntervaloMinutos() : INTERVALO_PADRAO_MINUTOS);
         monitoramento.setAtivo(dto.isAtivo());
 
@@ -162,15 +166,7 @@ public class ServiceMonitoramento {
                 return;
             }
 
-            String mensagem = avaliacao.resumo();
-            if (avaliacao.prompt() != null) {
-                try {
-                    mensagem = llmService.perguntar(avaliacao.prompt());
-                } catch (Exception e) {
-                    mensagem = "Relatório automático indisponível (falha ao consultar a LLM). Resumo bruto:\n"
-                            + avaliacao.resumo();
-                }
-            }
+            String mensagem = montarMensagem(monitoramento, alvo, json, avaliacao);
 
             String destino = alvo.getIp() != null ? alvo.getIp() : alvo.getUrl();
             String titulo = "Auditoria automática encontrou um possível problema em " + destino
@@ -185,6 +181,47 @@ public class ServiceMonitoramento {
             String mensagem = "Não foi possível concluir o scan agendado (" + monitoramento.getFerramenta()
                     + "): " + e.getMessage();
             notificar(alvo, monitoramento, titulo, mensagem, NivelNotificacao.ALERTA);
+        }
+    }
+
+    /**
+     * Monta o conteudo da notificacao de acordo com o FormatoSaida escolhido
+     * para este monitoramento:
+     *  - RELATORIO_LLM (padrao): gera um resumo em linguagem natural via LLM,
+     *    caindo pro resumo bruto se a LLM falhar;
+     *  - JSON: usa o proprio JSON estruturado ja obtido na avaliacao;
+     *  - RAW/HTML: reexecuta o scan pedindo essa saida pronta ao ServiceScan
+     *    (mesmo pipeline do scan manual), caindo pro resumo bruto se falhar.
+     */
+    private String montarMensagem(Monitoramento monitoramento, Alvo alvo, String json, AvaliacaoResultado avaliacao) {
+        FormatoSaida formato = monitoramento.getFormatoSaida() != null
+                ? monitoramento.getFormatoSaida() : FORMATO_PADRAO;
+
+        switch (formato) {
+            case JSON:
+                return json;
+
+            case RAW:
+            case HTML:
+                try {
+                    return serviceScan.seletor(alvo.getId(), monitoramento.getFerramenta(),
+                            monitoramento.getExecutor(), formato);
+                } catch (Exception e) {
+                    return "Não foi possível gerar a saída em " + formato + ". Resumo bruto:\n"
+                            + avaliacao.resumo();
+                }
+
+            case RELATORIO_LLM:
+            default:
+                if (avaliacao.prompt() != null) {
+                    try {
+                        return llmService.perguntar(avaliacao.prompt());
+                    } catch (Exception e) {
+                        return "Relatório automático indisponível (falha ao consultar a LLM). Resumo bruto:\n"
+                                + avaliacao.resumo();
+                    }
+                }
+                return avaliacao.resumo();
         }
     }
 

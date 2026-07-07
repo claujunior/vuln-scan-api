@@ -10,5 +10,6 @@ package BCC.ES.CLP.model;
 public enum FormatoSaida {
     RELATORIO_LLM,
     JSON,
-    RAW
+    RAW,
+    HTML
 }

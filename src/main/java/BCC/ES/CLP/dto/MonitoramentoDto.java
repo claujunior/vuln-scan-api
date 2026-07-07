@@ -14,6 +14,7 @@ public class MonitoramentoDto {
     private String ferramenta;       // "NMAP" ou "NUCLEI"
     private String executor;         // "baremetal" ou "docker"
     private String canalNotificacao; // "log" ou "webhook"
+    private String formatoSaida;     // "RELATORIO_LLM", "JSON", "RAW" ou "HTML"
     private int intervaloMinutos;
     private boolean ativo;
 }

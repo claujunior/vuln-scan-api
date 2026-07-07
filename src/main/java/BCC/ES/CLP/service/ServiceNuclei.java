@@ -31,6 +31,7 @@ public class ServiceNuclei extends ScanTemplate {
                          RelatorioLlmStrategy relatorioLlmStrategy,
                          JsonStrategy jsonStrategy,
                          SaidaBrutaStrategy saidaBrutaStrategy,
+                         HtmlDashboardStrategy htmlDashboardStrategy,
                          ServiceOrquestrador serviceOrquestrador) {
         super(serviceOrquestrador);
         this.repositoryVulnerabilidade = repositoryVulnerabilidade;
@@ -38,7 +39,8 @@ public class ServiceNuclei extends ScanTemplate {
         this.estrategias = Map.of(
                 FormatoSaida.RELATORIO_LLM, relatorioLlmStrategy,
                 FormatoSaida.JSON,          jsonStrategy,
-                FormatoSaida.RAW,           saidaBrutaStrategy
+                FormatoSaida.RAW,           saidaBrutaStrategy,
+                FormatoSaida.HTML,          htmlDashboardStrategy
         );
     }
 

@@ -218,6 +218,12 @@
     color: var(--muted);
   }
   .report-body.error { color: var(--danger); }
+  .report-body.html-embed {
+    padding: 0; white-space: normal; display: block;
+  }
+  .report-body.html-embed iframe {
+    width: 100%; height: 60vh; border: none; display: block; background: #fff;
+  }
 
   .executor-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
   .executor-chip {
@@ -419,6 +425,8 @@
     max-height: 220px; overflow-y: auto;
   }
   .notif-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+  .notif-body-html { padding: 0; }
+  .notif-body-html iframe { width: 100%; height: 320px; border: none; display: block; background: #fff; }
 </style>
 </head>
 <body>
@@ -699,6 +707,7 @@
   <div class="modal modal-lg">
     <div class="modal-title" id="report-modal-title">// RELATÓRIO DO SCAN</div>
     <div class="report-meta" id="report-modal-meta"></div>
+    <div class="executor-choices" id="report-formato-choices" style="margin-bottom:0.9rem;"></div>
     <div class="report-body" id="report-modal-body"></div>
     <div class="modal-actions">
       <button class="btn btn-info" id="report-download-btn" onclick="downloadReport()">⬇ BAIXAR .HTML</button>
@@ -717,8 +726,18 @@ let scanTargetId = null;
 let alvosCache = [];
 let scansCache = [];
 let vulnsCache = [];
-// chave: `${alvoId}:${tipo}` → { tipo, alvoLabel, texto, ts }
+// chave: `${alvoId}:${tipo}` → { tipo, alvoLabel, texto, formato, ts }
 let reportsCache = {};
+// Formato do relatório aberto no momento no modal (RELATORIO_LLM/JSON/RAW/HTML).
+// Usado para decidir como renderizar o corpo do modal e como gerar o download.
+let currentReportFormato = null;
+let currentReportRaw = '';
+// Contexto do relatório aberto no modal, para permitir trocar o formato sem
+// fechar o modal (reexecuta o mesmo scan pedindo outro FormatoSaida).
+let currentReportAlvoId = null;
+let currentReportTipo = null;
+let currentReportExecutor = null;
+let currentReportAlvoLabel = '';
 
 // Tipos de scan disponíveis. Para adicionar um novo playbook:
 // adicione um item aqui e o backend já roteia pelo enum Select.
@@ -743,7 +762,8 @@ let selectedExecutor = EXECUTORS[0].id;
 const FORMATOS = [
   { id: 'RELATORIO_LLM', nome: 'RELATÓRIO IA', desc: 'Relatório em linguagem natural gerado pela LLM' },
   { id: 'JSON',          nome: 'JSON',          desc: 'Dados já interpretados do scan (portas/vulnerabilidades), em JSON' },
-  { id: 'RAW',           nome: 'BRUTO',         desc: 'Saída pura da ferramenta, sem nenhum parsing' }
+  { id: 'RAW',           nome: 'BRUTO',         desc: 'Saída pura da ferramenta, sem nenhum parsing' },
+  { id: 'HTML',          nome: 'DASHBOARD',     desc: 'Mini-dashboard visual em HTML, sem passar pela LLM' }
 ];
 let selectedFormato = FORMATOS[0].id;
 
@@ -1049,6 +1069,7 @@ function renderMonCard(alvo, mon) {
   const ferramenta = mon?.ferramenta || 'NMAP';
   const executor = mon?.executor || 'baremetal';
   const canal = mon?.canalNotificacao || 'log';
+  const formato = mon?.formatoSaida || 'RELATORIO_LLM';
   const intervalo = mon?.intervaloMinutos || 60;
   const ativo = mon?.ativo || false;
 
@@ -1091,6 +1112,12 @@ function renderMonCard(alvo, mon) {
           </select>
         </div>
         <div class="form-group" style="margin-bottom:0;">
+          <label>Formato da notificação</label>
+          <select id="mon-formato-${id}" title="Como o conteúdo da notificação é montado quando um problema é encontrado">
+            ${FORMATOS.map(f => `<option value="${f.id}" ${f.id===formato?'selected':''}>${f.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
           <label>Intervalo (minutos)</label>
           <input type="number" min="1" id="mon-intervalo-${id}" value="${intervalo}">
         </div>
@@ -1109,6 +1136,7 @@ async function saveMonitoramento(alvoId) {
     ferramenta: document.getElementById(`mon-ferramenta-${alvoId}`).value,
     executor: document.getElementById(`mon-executor-${alvoId}`).value,
     canalNotificacao: document.getElementById(`mon-canal-${alvoId}`).value,
+    formatoSaida: document.getElementById(`mon-formato-${alvoId}`).value,
     intervaloMinutos: parseInt(document.getElementById(`mon-intervalo-${alvoId}`).value, 10) || 60,
     ativo: document.getElementById(`mon-ativo-${alvoId}`).checked
   };
@@ -1187,9 +1215,18 @@ function renderNotificacoes() {
           <button class="btn btn-sm btn-danger" onclick="deleteNotificacao(${n.id})">✕</button>
         </div>
       </div>
-      <div class="notif-body">${escapeHtml(n.mensagem)}</div>
+      ${isMensagemHtml(n.mensagem)
+        ? `<div class="notif-body notif-body-html"><iframe sandbox="allow-same-origin" srcdoc="${escapeHtml(n.mensagem)}"></iframe></div>`
+        : `<div class="notif-body">${escapeHtml(n.mensagem)}</div>`}
     </div>
   `).join('');
+}
+
+// Notificações de monitoramento com formato HTML chegam como uma página
+// pronta (dashboard); detecta pelo início do conteúdo para saber se deve
+// renderizar num iframe em vez de mostrar como texto.
+function isMensagemHtml(mensagem) {
+  return typeof mensagem === 'string' && /^\s*<!DOCTYPE html>/i.test(mensagem);
 }
 
 async function marcarNotificacaoLida(id) {
@@ -1385,12 +1422,12 @@ async function runScan(tipo) {
   const alvoLabel = alvo ? (alvo.ip || alvo.url || `#${id}`) : `#${id}`;
   closeScanTypeModal();
 
-  openReportModal(tipo, alvoLabel, executor);
+  openReportModal(tipo, alvoLabel, executor, formato, id);
   try {
     const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}/${formato}`, {method:'POST'});
     const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
-    reportsCache[`${id}:${tipo}`] = { tipo, executor, alvoLabel, texto, ts: new Date().toISOString() };
-    setReportContent(texto);
+    reportsCache[`${id}:${tipo}`] = { tipo, executor, alvoLabel, texto, formato, ts: new Date().toISOString() };
+    setReportContent(texto, formato);
     toast(`Scan ${tipo.toUpperCase()} (${executor}) concluído!`, 'success');
     await loadAll();
   } catch(e) {
@@ -1400,24 +1437,87 @@ async function runScan(tipo) {
 }
 
 // ---- REPORT MODAL ----
-function openReportModal(tipo, alvoLabel, executor) {
+function openReportModal(tipo, alvoLabel, executor, formato, alvoId) {
+  currentReportFormato = formato || null;
+  currentReportRaw = '';
+  currentReportTipo = tipo;
+  currentReportExecutor = executor || null;
+  currentReportAlvoId = alvoId ?? currentReportAlvoId;
+  currentReportAlvoLabel = alvoLabel || '';
+
   document.getElementById('report-modal-title').textContent =
     `// RELATÓRIO ${tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
     `<span class="tag">${escapeHtml(tipo.toUpperCase())}</span>` +
     (executor ? `<span class="tag">${escapeHtml(executor.toUpperCase())}</span>` : '') +
     ` Alvo: ${escapeHtml(alvoLabel)}`;
+  renderReportFormatoChoices();
   const body = document.getElementById('report-modal-body');
   body.classList.add('loading');
-  body.classList.remove('error');
+  body.classList.remove('error', 'html-embed');
   body.innerHTML = `<span class="spinner"></span> Executando scan, aguarde...`;
   document.getElementById('report-modal').classList.add('open');
 }
 
-function setReportContent(texto) {
+// Chips de formato dentro do modal do relatório: permitem pedir o mesmo
+// scan (mesmo alvo/tipo/executor) num formato diferente sem fechar o modal.
+function renderReportFormatoChoices() {
+  const container = document.getElementById('report-formato-choices');
+  if (!currentReportAlvoId) { container.innerHTML = ''; return; }
+  container.innerHTML = FORMATOS.map(f => `
+    <button type="button"
+            class="executor-chip ${f.id === currentReportFormato ? 'active' : ''}"
+            title="${escapeHtml(f.desc)}"
+            onclick="switchReportFormato('${f.id}')">${escapeHtml(f.nome)}</button>
+  `).join('');
+}
+
+async function switchReportFormato(novoFormato) {
+  if (!currentReportAlvoId || !currentReportTipo || novoFormato === currentReportFormato) return;
+  const id = currentReportAlvoId;
+  const tipo = currentReportTipo;
+  const executor = currentReportExecutor || EXECUTORS[0].id;
+
+  currentReportFormato = novoFormato;
+  renderReportFormatoChoices();
+  const body = document.getElementById('report-modal-body');
+  body.classList.add('loading');
+  body.classList.remove('error', 'html-embed');
+  body.innerHTML = `<span class="spinner"></span> Buscando em ${escapeHtml(novoFormato)}, aguarde...`;
+
+  try {
+    const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}/${novoFormato}`, {method:'POST'});
+    const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
+    reportsCache[`${id}:${tipo}`] = {
+      tipo, executor, alvoLabel: currentReportAlvoLabel, texto, formato: novoFormato, ts: new Date().toISOString()
+    };
+    setReportContent(texto, novoFormato);
+    await loadAll();
+  } catch(e) {
+    setReportError(e.message || 'Erro ao trocar formato');
+    toast('Falha ao trocar formato', 'error');
+  }
+}
+
+function setReportContent(texto, formato) {
+  if (formato !== undefined) currentReportFormato = formato || null;
+  currentReportRaw = texto || '';
+  renderReportFormatoChoices();
   const body = document.getElementById('report-modal-body');
   body.classList.remove('loading', 'error');
-  body.textContent = texto || '(sem conteúdo)';
+  if (currentReportFormato === 'HTML') {
+    // Dashboard já vem como página HTML pronta do backend: renderiza num
+    // iframe isolado (sandbox) em vez de mostrar como texto/escapado.
+    body.classList.add('html-embed');
+    body.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.srcdoc = texto || '<p>(sem conteúdo)</p>';
+    body.appendChild(iframe);
+  } else {
+    body.classList.remove('html-embed');
+    body.textContent = texto || '(sem conteúdo)';
+  }
 }
 
 function setReportError(msg) {
@@ -1436,7 +1536,30 @@ function closeReportModal() {
 function downloadReport() {
   const title  = document.getElementById('report-modal-title').textContent;
   const meta   = document.getElementById('report-modal-meta').innerHTML;
-  const texto  = document.getElementById('report-modal-body').textContent;
+  const texto  = currentReportRaw;
+
+  // Formato HTML: o backend já devolve uma página pronta (dashboard), então
+  // baixa exatamente como veio, sem passar pelo conversor de Markdown abaixo.
+  if (currentReportFormato === 'HTML') {
+    const blob = new Blob([texto], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const filename = `dashboard-${new Date().toISOString().slice(0,10)}.html`;
+
+    const old = document.getElementById('report-download-link');
+    if (old) { URL.revokeObjectURL(old.href); old.remove(); }
+
+    const a = document.createElement('a');
+    a.id = 'report-download-link';
+    a.href = url;
+    a.download = filename;
+    a.className = 'btn btn-info';
+    a.textContent = `✔ CONFIRMAR DOWNLOAD (${filename})`;
+    a.style.cssText = 'font-size:.78rem;margin-top:.75rem;display:inline-flex;align-items:center;';
+
+    const actions = document.querySelector('#report-modal .modal-actions');
+    actions.insertAdjacentElement('afterend', a);
+    return;
+  }
 
   // Converte Markdown simples para HTML (negrito, itálico, títulos, listas, código)
   function mdToHtml(md) {
@@ -1537,14 +1660,17 @@ function openSavedReport(alvoId, tipo) {
   const key = `${alvoId}:${tipo}`;
   const r = reportsCache[key];
   if (!r) return;
+  currentReportAlvoId = alvoId;
+  currentReportTipo = r.tipo;
+  currentReportExecutor = r.executor || null;
+  currentReportAlvoLabel = r.alvoLabel;
+
   document.getElementById('report-modal-title').textContent = `// RELATÓRIO ${r.tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
     `<span class="tag">${escapeHtml(r.tipo.toUpperCase())}</span>` +
     (r.executor ? `<span class="tag">${escapeHtml(r.executor.toUpperCase())}</span>` : '') +
     ` Alvo: ${escapeHtml(r.alvoLabel)} &nbsp;·&nbsp; ${fmtDate(r.ts)}`;
-  const body = document.getElementById('report-modal-body');
-  body.classList.remove('loading', 'error');
-  body.textContent = r.texto || '(sem conteúdo)';
+  setReportContent(r.texto, r.formato);
   document.getElementById('report-modal').classList.add('open');
 }
 
