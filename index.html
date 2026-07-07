@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLP Scanner</title>
+<title>Auditoria Web</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0c10;
     --surface: #0f1318;
     --border: #1e2530;
-    --accent: #00ff9d;
+    --accent: #2563eb;
     --accent2: #00c8ff;
     --danger: #ff4757;
     --warn: #ffa502;
@@ -41,8 +41,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
+      linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -158,7 +158,7 @@
   }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(0,255,157,0.03); }
+  tbody tr:hover { background: rgba(37,99,235,0.03); }
   td { padding: 0.8rem 1rem; color: var(--text); vertical-align: middle; }
 
   .ip-badge { color: var(--accent2); }
@@ -226,14 +226,14 @@
     padding: 0.5rem 1rem; cursor: pointer; transition: all 0.15s;
   }
   .executor-chip:hover { border-color: var(--accent); color: var(--text); }
-  .executor-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,157,0.05); }
+  .executor-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(37,99,235,0.05); }
 
   .scan-type-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .scan-type-card {
     border: 1px solid var(--border); padding: 1rem 1.25rem; cursor: pointer;
     transition: all 0.15s; background: var(--bg);
   }
-  .scan-type-card:hover { border-color: var(--accent); background: rgba(0,255,157,0.03); }
+  .scan-type-card:hover { border-color: var(--accent); background: rgba(37,99,235,0.03); }
   .scan-type-card .stc-name { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; letter-spacing: 1.5px; }
   .scan-type-card .stc-desc { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; margin-top: 0.3rem; }
 
@@ -359,7 +359,7 @@
 <!-- =================== AUTH SCREEN =================== -->
 <div id="auth-screen">
   <div class="auth-box">
-    <div class="auth-logo">// CLP</div>
+    <div class="auth-logo">// AUDITORIA WEB</div>
     <div class="auth-title">Network Scanner</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login')">LOGIN</button>
@@ -408,7 +408,7 @@
     <div class="topbar-brand">
       <div class="brand-icon">⌖</div>
       <div>
-        <div class="brand-name">CLP SCANNER</div>
+        <div class="brand-name">AUDITORIA WEB</div>
         <div class="brand-sub">NETWORK RECON SYSTEM</div>
       </div>
     </div>
@@ -605,7 +605,7 @@
     <div class="report-meta" id="report-modal-meta"></div>
     <div class="report-body" id="report-modal-body"></div>
     <div class="modal-actions">
-      <button class="btn btn-info" id="report-download-btn" onclick="downloadReport()">⬇ BAIXAR .HTML</button>
+      <button class="btn btn-info" id="report-download-btn" onclick="downloadReport()">⬇ BAIXAR <span id="report-download-ext">.HTML</span></button>
       <button class="btn" onclick="closeReportModal()">FECHAR</button>
     </div>
   </div>
@@ -617,6 +617,7 @@ let token = '';
 let currentUser = '';
 let deleteTargetId = null;
 let scanTargetId = null;
+let currentReportFormato = null;
 
 let alvosCache = [];
 let scansCache = [];
@@ -1080,11 +1081,11 @@ async function runScan(tipo) {
   const alvoLabel = alvo ? (alvo.ip || alvo.url || `#${id}`) : `#${id}`;
   closeScanTypeModal();
 
-  openReportModal(tipo, alvoLabel, executor);
+  openReportModal(tipo, alvoLabel, executor, formato);
   try {
     const resp = await apiFetch(`/Scan/post/${id}/${tipo}/${executor}/${formato}`, {method:'POST'});
     const texto = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
-    reportsCache[`${id}:${tipo}`] = { tipo, executor, alvoLabel, texto, ts: new Date().toISOString() };
+    reportsCache[`${id}:${tipo}`] = { tipo, executor, formato, alvoLabel, texto, ts: new Date().toISOString() };
     setReportContent(texto);
     toast(`Scan ${tipo.toUpperCase()} (${executor}) concluído!`, 'success');
     await loadAll();
@@ -1095,7 +1096,9 @@ async function runScan(tipo) {
 }
 
 // ---- REPORT MODAL ----
-function openReportModal(tipo, alvoLabel, executor) {
+function openReportModal(tipo, alvoLabel, executor, formato) {
+  currentReportFormato = formato || null;
+  updateDownloadButtonLabel();
   document.getElementById('report-modal-title').textContent =
     `// RELATÓRIO ${tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
@@ -1107,6 +1110,11 @@ function openReportModal(tipo, alvoLabel, executor) {
   body.classList.remove('error');
   body.innerHTML = `<span class="spinner"></span> Executando scan, aguarde...`;
   document.getElementById('report-modal').classList.add('open');
+}
+
+function updateDownloadButtonLabel() {
+  document.getElementById('report-download-ext').textContent =
+    currentReportFormato === 'JSON' ? '.JSON' : '.HTML';
 }
 
 function setReportContent(texto) {
@@ -1132,6 +1140,31 @@ function downloadReport() {
   const title  = document.getElementById('report-modal-title').textContent;
   const meta   = document.getElementById('report-modal-meta').innerHTML;
   const texto  = document.getElementById('report-modal-body').textContent;
+  const tipoAlvo = title.toLowerCase().includes('nuclei') ? 'nuclei' : 'nmap';
+
+  const old = document.getElementById('report-download-link');
+  if (old) { URL.revokeObjectURL(old.href); old.remove(); }
+
+  if (currentReportFormato === 'JSON') {
+    let content = texto;
+    try { content = JSON.stringify(JSON.parse(texto), null, 2); } catch(e) { /* mantém texto original se não for JSON válido */ }
+
+    const blob     = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const url      = URL.createObjectURL(blob);
+    const filename = `relatorio-${tipoAlvo}-${new Date().toISOString().slice(0,10)}.json`;
+
+    const a       = document.createElement('a');
+    a.id          = 'report-download-link';
+    a.href        = url;
+    a.download    = filename;
+    a.className   = 'btn btn-info';
+    a.textContent = `✔ CONFIRMAR DOWNLOAD (${filename})`;
+    a.style.cssText = 'font-size:.78rem;margin-top:.75rem;display:inline-flex;align-items:center;';
+
+    const actions = document.querySelector('#report-modal .modal-actions');
+    actions.insertAdjacentElement('afterend', a);
+    return;
+  }
 
   // Converte Markdown simples para HTML (negrito, itálico, títulos, listas, código)
   function mdToHtml(md) {
@@ -1159,17 +1192,17 @@ function downloadReport() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title.replace(/</g,'&lt;')}</title>
   <style>
-    :root { --accent:#00ff9d; --accent2:#00c8ff; --danger:#ff4757; --warn:#ffa502; }
+    :root { --accent:#2563eb; --accent2:#00c8ff; --danger:#ff4757; --warn:#ffa502; }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { background:#0a0c10; color:#c9d1d9; font-family:'Segoe UI',system-ui,sans-serif;
            line-height:1.7; padding:2.5rem; }
     body::before { content:''; position:fixed; inset:0;
-      background-image:linear-gradient(rgba(0,255,157,.03)1px,transparent 1px),
-        linear-gradient(90deg,rgba(0,255,157,.03)1px,transparent 1px);
+      background-image:linear-gradient(rgba(37,99,235,.03)1px,transparent 1px),
+        linear-gradient(90deg,rgba(37,99,235,.03)1px,transparent 1px);
       background-size:40px 40px; pointer-events:none; z-index:0; }
     .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; }
     header { border-left:3px solid var(--accent); padding:.6rem 1.2rem;
-             margin-bottom:1.8rem; background:rgba(0,255,157,.04); }
+             margin-bottom:1.8rem; background:rgba(37,99,235,.04); }
     header .brand { font-family:monospace; font-size:.75rem; color:var(--accent);
                     letter-spacing:3px; margin-bottom:.25rem; }
     header h1 { font-size:1.5rem; color:#fff; font-weight:700; }
@@ -1197,24 +1230,20 @@ function downloadReport() {
 <body>
   <div class="wrap">
     <header>
-      <div class="brand">// CLP SCANNER</div>
+      <div class="brand">// AUDITORIA WEB</div>
       <h1>${title.replace(/</g,'&lt;')}</h1>
       <div class="meta">${meta}</div>
     </header>
     <div class="generated">Gerado em: ${now}</div>
     <div class="content"><p>${mdToHtml(texto)}</p></div>
-    <footer>CLP Network Scanner · Relatório gerado automaticamente</footer>
+    <footer>Auditoria Web · Relatório gerado automaticamente</footer>
   </div>
 </body>
 </html>`;
 
   const blob    = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url     = URL.createObjectURL(blob);
-  const tipo    = title.toLowerCase().includes('nuclei') ? 'nuclei' : 'nmap';
-  const filename = `relatorio-${tipo}-${new Date().toISOString().slice(0,10)}.html`;
-
-  const old = document.getElementById('report-download-link');
-  if (old) { URL.revokeObjectURL(old.href); old.remove(); }
+  const filename = `relatorio-${tipoAlvo}-${new Date().toISOString().slice(0,10)}.html`;
 
   const a       = document.createElement('a');
   a.id          = 'report-download-link';
@@ -1232,6 +1261,8 @@ function openSavedReport(alvoId, tipo) {
   const key = `${alvoId}:${tipo}`;
   const r = reportsCache[key];
   if (!r) return;
+  currentReportFormato = r.formato || null;
+  updateDownloadButtonLabel();
   document.getElementById('report-modal-title').textContent = `// RELATÓRIO ${r.tipo.toUpperCase()}`;
   document.getElementById('report-modal-meta').innerHTML =
     `<span class="tag">${escapeHtml(r.tipo.toUpperCase())}</span>` +
