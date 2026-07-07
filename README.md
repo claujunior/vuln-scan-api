@@ -13,6 +13,7 @@ Ao utilizar este projeto, você concorda em seguir todas as leis e regulamentos 
 ## Requisitos
 
 * Docker e Docker Compose
+* Ansible
 * Java 17+
 * IntelliJ (Opcional)
 
@@ -30,7 +31,7 @@ O projeto usa o OpenRouter para acessar modelos de IA. Para obter sua chave:
 
 ---
 
-## Passo a passo
+## Passo a passo 
 
 ### 1. Criar o arquivo `.env`
 
